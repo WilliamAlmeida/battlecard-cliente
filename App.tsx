@@ -23,7 +23,7 @@ export default function App() {
   const {
     gameStarted, gameOver, winner, player, npc, turnCount, currentTurnPlayer, phase, logs,
     isAIProcessing, attackingCardId, damagedCardId, floatingDamage, difficulty, gameMode,
-    startGame, setPhase, summonCard, executeAttack, endTurn, addLog, resetGame
+    startGame, setPhase, summonCard, setTrap, useSpell, executeAttack, endTurn, addLog, resetGame
   } = useGameLogic();
 
   const [currentView, setCurrentView] = useState<AppView>('menu');
@@ -116,6 +116,32 @@ export default function App() {
 
     // Clique na Mão (Invocação)
     if (location === 'hand' && phase === Phase.MAIN) {
+      // Handle SPELL cards
+      if (card.cardType === 'SPELL') {
+        const effect = card.spellEffect;
+        if (effect?.target === 'SINGLE_ENEMY' || effect?.target === 'SINGLE_ALLY') {
+          // Need to select target
+          addLog(`Selecione um alvo para ${card.name}`);
+          setSelectedCardId(card.uniqueId);
+          setAttackMode(true); // Reuse attack mode for target selection
+          return;
+        } else {
+          // Direct cast
+          useSpell('player', card.uniqueId);
+          return;
+        }
+      }
+
+      // Handle TRAP cards
+      if (card.cardType === 'TRAP') {
+        if (player.trapZone.length >= 2) {
+          addLog("Zona de armadilhas cheia! (máximo 2)");
+          return;
+        }
+        setTrap('player', card.uniqueId);
+        return;
+      }
+
       // Verificar limite de campo
       if (player.field.length >= 3) {
         addLog("CAMPO CHEIO! Você não pode ter mais de 3 Pokémon simultâneos.");
@@ -140,9 +166,16 @@ export default function App() {
 
   const handleEnemyClick = (target: Card) => {
     if (attackMode && selectedCardId && !isBusy) {
-      executeAttack(selectedCardId, target.uniqueId, 'player');
-      setAttackMode(false);
-      setSelectedCardId(null);
+      const selectedCard = player.hand.find(c => c.uniqueId === selectedCardId) || player.field.find(c => c.uniqueId === selectedCardId);
+      if (selectedCard?.cardType === 'SPELL') {
+        useSpell('player', selectedCardId, target.uniqueId);
+        setAttackMode(false);
+        setSelectedCardId(null);
+      } else {
+        executeAttack(selectedCardId, target.uniqueId, 'player');
+        setAttackMode(false);
+        setSelectedCardId(null);
+      }
     }
   };
 
@@ -370,6 +403,17 @@ export default function App() {
            ))}
            {player.field.length === 0 && <div className="text-white/5 font-black text-8xl uppercase tracking-tighter italic opacity-20">Seu Campo Limpo</div>}
         </div>
+
+        {/* Trap Zone (Player) */}
+        {player.trapZone.length > 0 && (
+          <div className="absolute bottom-4 right-4 flex gap-3">
+            {player.trapZone.map(trap => (
+              <div key={trap.uniqueId} className="scale-75">
+                <CardComponent card={trap} compact />
+              </div>
+            ))}
+          </div>
+        )}
       </main>
 
       {/* Footer / Mão */}

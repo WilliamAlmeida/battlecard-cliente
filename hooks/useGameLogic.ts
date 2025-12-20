@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Player, Card, Phase, GameLogEntry, ElementType, StatusEffect, AIDifficulty, GameMode, AbilityTrigger, CardType } from '../types';
+import { Player, Card, Phase, GameLogEntry, ElementType, StatusEffect, AIDifficulty, GameMode, AbilityTrigger, CardType, TrapCondition } from '../types';
 import { INITIAL_DECK, SPELL_CARDS, TRAP_CARDS, ABILITIES } from '../constants';
 import { GameRules } from '../utils/gameRules';
 import { AIController } from '../classes/AIController';
@@ -116,6 +116,51 @@ const applyStatusEffect = (card: Card, status: StatusEffect, duration: number = 
   }
   
   return newCard;
+};
+
+// Helper to check and activate traps
+const checkAndActivateTraps = (
+  trapOwner: Player,
+  condition: TrapCondition,
+  context: { attacker?: Card, defender?: Card, attackerOwner?: 'player' | 'npc' },
+  setPlayer: (value: Player | ((prev: Player) => Player)) => void,
+  setNpc: (value: Player | ((prev: Player) => Player)) => void
+): { activatedTraps: Card[], damage: number, statusEffects: Array<{target: Card, status: StatusEffect}>, destroyTargets: string[], logs: string[] } => {
+  const activatedTraps: Card[] = [];
+  let totalDamage = 0;
+  const logs: string[] = [];
+  const statusEffects: Array<{target: Card, status: StatusEffect}> = [];
+  const destroyTargets: string[] = [];
+
+  trapOwner.trapZone.forEach(trap => {
+    if (trap.trapCondition === condition && trap.isSet) {
+      activatedTraps.push(trap);
+      logs.push(`⚠️ TRAP ATIVADA: ${trap.name}!`);
+
+      if (trap.trapEffect) {
+        const effect = trap.trapEffect;
+        
+        if (effect.type === 'DAMAGE' && context.attacker) {
+          const damage = effect.value || 500;
+          totalDamage += damage;
+          logs.push(`${trap.name} causa ${damage} de dano em ${context.attacker.name}!`);
+        }
+        else if (effect.type === 'STATUS' && effect.statusEffect && context.attacker) {
+          statusEffects.push({ target: context.attacker, status: effect.statusEffect });
+          logs.push(`${trap.name} aplicou ${effect.statusEffect} em ${context.attacker.name}!`);
+        }
+        else if (effect.type === 'DESTROY' && context.attacker) {
+          destroyTargets.push(context.attacker.uniqueId);
+          logs.push(`${trap.name} destruiu ${context.attacker.name}!`);
+        }
+        else if (effect.type === 'DEBUFF' && effect.value && context.attacker) {
+          logs.push(`${trap.name} reduziu ${Math.abs(effect.value)} ATK de ${context.attacker.name}!`);
+        }
+      }
+    }
+  });
+
+  return { activatedTraps, damage: totalDamage, statusEffects, destroyTargets, logs };
 };
 
 export const useGameLogic = () => {
@@ -305,6 +350,68 @@ export const useGameLogic = () => {
 
     await new Promise(r => setTimeout(r, 600));
 
+    // Check for ON_ATTACK traps from defender
+    const trapResult = checkAndActivateTraps(
+      defenderState,
+      TrapCondition.ON_ATTACK,
+      { attacker, attackerOwner: ownerId },
+      setPlayer,
+      setNpc
+    );
+
+    // Log trap effects
+    trapResult.logs.forEach(log => addLog(log, 'trap'));
+
+    // Remove activated traps
+    if (trapResult.activatedTraps.length > 0) {
+      const fn = isPlayer ? setNpc : setPlayer;
+      fn(prev => ({
+        ...prev,
+        trapZone: prev.trapZone.filter(t => !trapResult.activatedTraps.some(at => at.uniqueId === t.uniqueId)),
+        graveyard: [...prev.graveyard, ...trapResult.activatedTraps]
+      }));
+    }
+
+    // Apply trap damage to attacker's owner
+    if (trapResult.damage > 0) {
+      setFloatingDamage({ id: generateUniqueId(), value: trapResult.damage, targetId: isPlayer ? 'player-hp' : 'npc-hp' });
+      const fn = isPlayer ? setPlayer : setNpc;
+      fn(p => {
+        const newHp = Math.max(0, p.hp - trapResult.damage);
+        if (newHp <= 0) { setWinner(isPlayer ? 'npc' : 'player'); setGameOver(true); }
+        return { ...p, hp: newHp };
+      });
+      await new Promise(r => setTimeout(r, 400));
+    }
+
+    // Apply status effects from traps
+    if (trapResult.statusEffects.length > 0) {
+      const fn = isPlayer ? setPlayer : setNpc;
+      fn(p => ({
+        ...p,
+        field: p.field.map(c => {
+          const statusTarget = trapResult.statusEffects.find(se => se.target.uniqueId === c.uniqueId);
+          return statusTarget ? applyStatusEffect(c, statusTarget.status, 3) : c;
+        })
+      }));
+    }
+
+    // Destroy attacker if trap caused destruction
+    if (trapResult.destroyTargets.includes(attacker.uniqueId)) {
+      const fn = isPlayer ? setPlayer : setNpc;
+      fn(p => ({
+        ...p,
+        field: p.field.filter(c => c.uniqueId !== attacker.uniqueId),
+        graveyard: [...p.graveyard, attacker]
+      }));
+      addLog(`${attacker.name} foi destruído pela armadilha!`, 'trap');
+      setAttackingCardId(null);
+      setDamagedCardId(null);
+      setFloatingDamage(null);
+      setIsAnimating(false);
+      return;
+    }
+
     if (!targetId) {
       const damage = attacker.attack;
       addLog(`ATAQUE DIRETO! ${attacker.name} causou ${damage} de dano!`, 'combat');
@@ -422,6 +529,10 @@ export const useGameLogic = () => {
                soundService.playSummon();
                setPhase(Phase.BATTLE);
             }
+          } else if (action.type === 'USE_SPELL' && action.cardId) {
+            useSpell('npc', action.cardId, action.targetId);
+          } else if (action.type === 'SET_TRAP' && action.cardId) {
+            setTrap('npc', action.cardId);
           } else if (action.type === 'ATTACK' && action.cardId) {
             executeAttack(action.cardId, action.targetId || null, 'npc');
           } else if (action.type === 'GO_TO_BATTLE') {
@@ -473,6 +584,150 @@ export const useGameLogic = () => {
     }
   }, [addLog]);
 
+  // Set trap card
+  const setTrap = useCallback((owner: 'player' | 'npc', cardId: string) => {
+    const setFn = owner === 'player' ? setPlayer : setNpc;
+    const state = owner === 'player' ? gameStateRef.current.player : gameStateRef.current.npc;
+    const card = state.hand.find(c => c.uniqueId === cardId);
+    
+    if (!card || card.cardType !== CardType.TRAP) return;
+    if (state.trapZone.length >= 2) {
+      addLog('Zona de armadilhas cheia! (máximo 2)');
+      return;
+    }
+    
+    setFn(p => ({
+      ...p,
+      hand: p.hand.filter(c => c.uniqueId !== cardId),
+      trapZone: [...p.trapZone, { ...card, isSet: true }]
+    }));
+    
+    addLog(`${owner === 'player' ? 'Você' : 'CPU'} setou uma armadilha!`);
+    soundService.playBuff();
+  }, [addLog]);
+
+  // Use spell card
+  const useSpell = useCallback((owner: 'player' | 'npc', cardId: string, targetId?: string) => {
+    const state = owner === 'player' ? gameStateRef.current.player : gameStateRef.current.npc;
+    const opponent = owner === 'player' ? gameStateRef.current.npc : gameStateRef.current.player;
+    const card = state.hand.find(c => c.uniqueId === cardId);
+    
+    if (!card || card.cardType !== CardType.SPELL || !card.spellEffect) return;
+    
+    const effect = card.spellEffect;
+    const ownerName = owner === 'player' ? 'Você' : 'CPU';
+    
+    // Remove from hand and add to graveyard
+    const setFn = owner === 'player' ? setPlayer : setNpc;
+    const opponentSetFn = owner === 'player' ? setNpc : setPlayer;
+    
+    setFn(p => ({
+      ...p,
+      hand: p.hand.filter(c => c.uniqueId !== cardId),
+      graveyard: [...p.graveyard, card]
+    }));
+    
+    addLog(`${ownerName} usou ${card.name}!`, 'spell');
+    soundService.playBuff();
+    
+    // Apply effect
+    if (effect.type === 'HEAL') {
+      const healAmount = effect.value || 1000;
+      setFn(p => ({ ...p, hp: Math.min(8000, p.hp + healAmount) }));
+      addLog(`${ownerName} recuperou ${healAmount} HP!`, 'effect');
+    }
+    else if (effect.type === 'DAMAGE') {
+      const damage = effect.value || 500;
+      if (effect.target === 'SINGLE_ENEMY' && targetId) {
+        const target = opponent.field.find(c => c.uniqueId === targetId);
+        if (target) {
+          if (damage >= target.defense) {
+            opponentSetFn(p => ({
+              ...p,
+              field: p.field.filter(c => c.uniqueId !== targetId),
+              graveyard: [...p.graveyard, target]
+            }));
+            addLog(`${card.name} destruiu ${target.name}!`, 'combat');
+          } else {
+            addLog(`${card.name} causou ${damage} de dano em ${target.name}!`, 'combat');
+          }
+        }
+      }
+      else if (effect.target === 'ALL_ENEMIES') {
+        opponentSetFn(p => {
+          const survived = p.field.filter(c => c.defense > damage);
+          const destroyed = p.field.filter(c => c.defense <= damage);
+          return {
+            ...p,
+            field: survived,
+            graveyard: [...p.graveyard, ...destroyed]
+          };
+        });
+        addLog(`${card.name} causou ${damage} de dano em todos os inimigos!`, 'combat');
+      }
+      else if (effect.target === 'OWNER') {
+        opponentSetFn(p => ({ ...p, hp: Math.max(0, p.hp - damage) }));
+        addLog(`${card.name} causou ${damage} de dano direto!`, 'combat');
+      }
+    }
+    else if (effect.type === 'BUFF' && targetId) {
+      const buffAmount = effect.value || 500;
+      setFn(p => ({
+        ...p,
+        field: p.field.map(c => c.uniqueId === targetId ? { ...c, attack: c.attack + buffAmount } : c)
+      }));
+      const target = state.field.find(c => c.uniqueId === targetId);
+      if (target) addLog(`${target.name} ganhou +${buffAmount} ATK!`, 'effect');
+    }
+    else if (effect.type === 'DRAW') {
+      const drawCount = effect.value || 2;
+      setFn(p => {
+        const drawn = p.deck.slice(0, drawCount);
+        return {
+          ...p,
+          hand: [...p.hand, ...drawn],
+          deck: p.deck.slice(drawCount)
+        };
+      });
+      addLog(`${ownerName} comprou ${drawCount} carta(s)!`, 'effect');
+    }
+    else if (effect.type === 'DESTROY' && targetId) {
+      const target = opponent.field.find(c => c.uniqueId === targetId);
+      if (target) {
+        opponentSetFn(p => ({
+          ...p,
+          field: p.field.filter(c => c.uniqueId !== targetId),
+          graveyard: [...p.graveyard, target]
+        }));
+        addLog(`${card.name} destruiu ${target.name}!`, 'combat');
+      }
+    }
+    else if (effect.type === 'STATUS' && effect.statusEffect && targetId) {
+      const target = opponent.field.find(c => c.uniqueId === targetId);
+      if (target) {
+        opponentSetFn(p => ({
+          ...p,
+          field: p.field.map(c => c.uniqueId === targetId ? applyStatusEffect(c, effect.statusEffect!, effect.duration || 3) : c)
+        }));
+        addLog(`${card.name} aplicou ${effect.statusEffect} em ${target.name}!`, 'status');
+      }
+    }
+    else if (effect.type === 'REVIVE' && effect.target === 'GRAVEYARD') {
+      if (state.graveyard.length > 0 && state.field.length < 3) {
+        const toRevive = state.graveyard[state.graveyard.length - 1];
+        const revivedCard = effect.value === 1 
+          ? { ...toRevive, hasAttacked: false }
+          : { ...toRevive, attack: Math.floor(toRevive.attack / 2), hasAttacked: false };
+        setFn(p => ({
+          ...p,
+          field: [...p.field, revivedCard],
+          graveyard: p.graveyard.slice(0, -1)
+        }));
+        addLog(`${ownerName} reviveu ${toRevive.name}!`, 'effect');
+      }
+    }
+  }, [addLog]);
+
   return {
     gameStarted, gameOver, winner, player, npc, turnCount, currentTurnPlayer, phase, logs,
     isAIProcessing: isAnimating,
@@ -481,6 +736,8 @@ export const useGameLogic = () => {
     startGame, 
     setPhase, 
     summonCard,
+    setTrap,
+    useSpell,
     executeAttack,
     endTurn: () => {
       setPhase(Phase.DRAW);
