@@ -16,6 +16,7 @@ const shuffle = <T,>(array: T[]): T[] => {
 
 export const useGameLogic = () => {
   const [gameStarted, setGameStarted] = useState(false);
+  const [starter, setStarter] = useState<'player' | 'npc'>('player');
   const [gameOver, setGameOver] = useState(false);
   const [winner, setWinner] = useState<'player' | 'npc' | null>(null);
   const [logs, setLogs] = useState<GameLogEntry[]>([]);
@@ -32,11 +33,11 @@ export const useGameLogic = () => {
   const [floatingDamage, setFloatingDamage] = useState<{id: string, value: number, targetId: string} | null>(null);
   const [isAnimating, setIsAnimating] = useState(false);
 
-  const gameStateRef = useRef({ player, npc, phase, currentTurnPlayer, gameOver, gameStarted, isAnimating });
+  const gameStateRef = useRef({ player, npc, phase, currentTurnPlayer, gameOver, gameStarted, isAnimating, turnCount, starter });
 
   useEffect(() => {
-    gameStateRef.current = { player, npc, phase, currentTurnPlayer, gameOver, gameStarted, isAnimating };
-  }, [player, npc, phase, currentTurnPlayer, gameOver, gameStarted, isAnimating]);
+    gameStateRef.current = { player, npc, phase, currentTurnPlayer, gameOver, gameStarted, isAnimating, turnCount, starter };
+  }, [player, npc, phase, currentTurnPlayer, gameOver, gameStarted, isAnimating, turnCount, starter]);
 
   const addLog = useCallback((message: string, type: 'info' | 'combat' | 'effect' = 'info') => {
     const id = generateUniqueId();
@@ -71,6 +72,7 @@ export const useGameLogic = () => {
     setNpc({ id: 'npc', hp: 4000, hand: npcDeck.splice(0, 5), deck: npcDeck, field: [], graveyard: [] });
     setTurnCount(1);
     setCurrentTurnPlayer('player');
+    setStarter('player');
     setPhase(Phase.MAIN);
     setLogs([]);
     setGameStarted(true);
@@ -79,9 +81,32 @@ export const useGameLogic = () => {
     addLog("Batalha iniciada! Seu turno.");
   };
 
+  useEffect(() => {
+    // Se entrarmos em BATTLE no primeiro turno, quem iniciou não pode atacar — passar a vez imediatamente
+    if (phase === Phase.BATTLE && gameStarted && !gameOver && gameStateRef.current.turnCount === 1) {
+      const current = gameStateRef.current.currentTurnPlayer;
+      const whoStarted = gameStateRef.current.starter;
+      if (current === whoStarted) {
+        addLog('Quem iniciou não pode atacar no primeiro turno. Passando a vez...');
+        setPhase(Phase.DRAW);
+        setCurrentTurnPlayer(current === 'player' ? 'npc' : 'player');
+        setTurnCount(c => c + 1);
+        setPlayer(p => ({ ...p, field: p.field.map(c => ({ ...c, hasAttacked: false })) }));
+        setNpc(p => ({ ...p, field: p.field.map(c => ({ ...c, hasAttacked: false })) }));
+        return;
+      }
+    }
+  }, [phase, gameStarted, gameOver]);
+
   const executeAttack = useCallback(async (attackerId: string, targetId: string | null, ownerId: 'player' | 'npc') => {
     if (gameStateRef.current.isAnimating) return;
-    
+
+    // Não permitir atacar no primeiro turno quem iniciou o jogo
+    if (gameStateRef.current.turnCount === 1 && gameStateRef.current.currentTurnPlayer === ownerId) {
+      addLog('Quem começou o jogo não pode atacar no primeiro turno.');
+      return;
+    }
+
     setIsAnimating(true);
     setAttackingCardId(attackerId);
 
