@@ -127,6 +127,7 @@ export const useGameLogic = () => {
           const fn = isPlayer ? setNpc : setPlayer;
           fn(p => ({ ...p, hp: Math.max(0, p.hp - result.damageToDefenderOwner) }));
           if (defenderState.hp - result.damageToDefenderOwner <= 0) { setWinner(isPlayer ? 'player' : 'npc'); setGameOver(true); }
+          addLog(`Dono de ${defender.name} sofreu ${result.damageToDefenderOwner} de dano (DEF ${defender.defense} reduzido).`, 'combat');
         }
 
         if (result.damageToAttackerOwner > 0) {
@@ -134,9 +135,10 @@ export const useGameLogic = () => {
           const fn = isPlayer ? setPlayer : setNpc;
           fn(p => ({ ...p, hp: Math.max(0, p.hp - result.damageToAttackerOwner) }));
           if (attackerState.hp - result.damageToAttackerOwner <= 0) { setWinner(isPlayer ? 'npc' : 'player'); setGameOver(true); }
+          addLog(`Dono de ${attacker.name} sofreu ${result.damageToAttackerOwner} de dano (DEF ${attacker.defense} reduzido).`, 'combat');
         }
 
-        addLog(`${attacker.name} (ATK ${attacker.attack}) desafiou ${defender.name} (ATK ${defender.attack})!`, 'combat');
+        addLog(`${attacker.name} (ATK ${attacker.attack}) desafiou ${defender.name} (ATK ${defender.attack} / DEF ${defender.defense})!`, 'combat');
 
         setTimeout(() => {
           if (!result.defenderSurvived) {

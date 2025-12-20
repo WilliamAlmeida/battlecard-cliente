@@ -19,13 +19,15 @@ export const GameRules = {
     let damageToAttackerOwner = 0;
 
     if (attacker.attack > defender.attack) {
+      // Atacante vence; defender é nocauteado. Defesa reduz o dano recebido pelo dono do defensor.
       defenderSurvived = false;
-      damageToDefenderOwner = attacker.attack - defender.attack;
+      damageToDefenderOwner = Math.max(0, attacker.attack - defender.defense);
     } else if (attacker.attack < defender.attack) {
+      // Defensor vence; atacante é nocauteado. Defesa do atacante reduz o dano ao dono do atacante.
       attackerSurvived = false;
-      damageToAttackerOwner = defender.attack - attacker.attack;
+      damageToAttackerOwner = Math.max(0, defender.attack - attacker.defense);
     } else {
-      // Empate
+      // Empate: ambos são nocauteados, sem dano direto aos donos (mantido comportamento anterior)
       attackerSurvived = false;
       defenderSurvived = false;
     }
