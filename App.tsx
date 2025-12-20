@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, Phase } from './types';
 import { useGameLogic } from './hooks/useGameLogic';
 import { CardComponent } from './components/CardComponent';
@@ -16,6 +16,13 @@ export default function App() {
   const [cardsToSacrifice, setCardsToSacrifice] = useState<string[]>([]);
   const [pendingSummonCardId, setPendingSummonCardId] = useState<string | null>(null);
   const [attackMode, setAttackMode] = useState(false);
+
+  // Auto-start the game on mount to help debug blank screen in dev.
+  useEffect(() => {
+    if (!gameStarted) startGame();
+    // intentionally run once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const isBusy = isAIProcessing || gameOver;
 
@@ -148,7 +155,6 @@ export default function App() {
              <div key={card.uniqueId} onClick={() => handleEnemyClick(card)} className={`cursor-pointer transition-transform ${attackMode ? 'hover:scale-110' : ''}`}>
                <CardComponent 
                  card={card} 
-                 isOpponent 
                  isAttacking={attackingCardId === card.uniqueId} 
                  isDamaged={damagedCardId === card.uniqueId}
                />
@@ -184,7 +190,7 @@ export default function App() {
       </main>
 
       {/* Footer / Mão */}
-      <footer className="bg-slate-950 p-10 border-t-8 border-white/5 z-30 shadow-[0_-30px_60px_rgba(0,0,0,0.6)]">
+      <footer className="bg-slate-950 p-10 border-t-8 border-white/5 z-30 shadow-[0_-30px_60px_rgba(0,0,0,0.6)] min-h-[400px]">
          <div className="flex justify-between items-center mb-10 max-w-screen-2xl mx-auto">
             <div className="flex gap-10 items-center">
                <div className="flex flex-col bg-slate-900/50 p-4 rounded-2xl border border-white/5">
@@ -206,7 +212,7 @@ export default function App() {
               <div className="flex gap-6 bg-red-950/40 p-6 rounded-3xl border-2 border-red-500/50 animate-pulse">
                  <div className="flex flex-col justify-center mr-8">
                     <span className="text-sm font-bold text-red-400 uppercase tracking-widest">Aguardando Sacrifícios</span>
-                    <span className="text-3xl font-black">Selecione {player.hand.find(c => c.uniqueId === pendingSummonCardId)?.sacrificeRequired || 0} no campo</span>
+                    <span className="text-lg font-black">Selecione {player.hand.find(c => c.uniqueId === pendingSummonCardId)?.sacrificeRequired || 0} no campo</span>
                  </div>
                  <button onClick={() => {
                    const card = player.hand.find(c => c.uniqueId === pendingSummonCardId);
@@ -221,7 +227,7 @@ export default function App() {
          </div>
 
          {/* Mão do Jogador */}
-         <div className="flex gap-8 h-64 md:h-80 items-center justify-center overflow-x-auto pb-6 scrollbar-hide max-w-screen-2xl mx-auto">
+         <div className="flex gap-8 h-64 md:h-80 items-center justify-center pb-6 scrollbar-hide max-w-screen-2xl mx-auto">
             {player.hand.map((card, idx) => (
               <div 
                 key={card.uniqueId} 

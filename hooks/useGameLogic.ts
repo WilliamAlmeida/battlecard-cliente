@@ -195,6 +195,14 @@ export const useGameLogic = () => {
       }, 1000);
       return () => clearTimeout(timer);
     }
+    
+    // Auto draw phase para o player
+    if (currentTurnPlayer === 'player' && phase === Phase.DRAW && !gameOver && gameStarted && !isAnimating) {
+      const timer = setTimeout(() => {
+        handleDrawPhase();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
   }, [currentTurnPlayer, phase, gameOver, gameStarted, isAnimating, npc, player, handleDrawPhase, executeAttack, addLog]);
 
   return {

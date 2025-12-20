@@ -78,7 +78,7 @@ export const CardComponent: React.FC<CardProps> = ({ card, compact, isOpponent, 
   return (
     <div className={baseClasses}>
       <div className="flex justify-between items-start mb-4">
-        <span className="font-black text-xl md:text-2xl truncate leading-tight drop-shadow-lg tracking-tighter italic">{card.name}</span>
+        <span className="font-black text-xl md:text-2xl truncate leading-tight drop-shadow-lg tracking-tighter italic max-w-full overflow-hidden">{card.name}</span>
       </div>
 
       <div className="flex justify-between items-center px-4 py-2 mb-4 bg-black/30 rounded-2xl border border-white/10">
@@ -90,13 +90,15 @@ export const CardComponent: React.FC<CardProps> = ({ card, compact, isOpponent, 
          </div>
       </div>
 
+      {!compact && (
       <div className="flex-1 bg-black/20 rounded-2xl flex items-center justify-center mb-4 border-2 border-white/5 shadow-inner">
-         <span className={`font-black text-white/10 ${compact ? 'text-6xl' : 'text-9xl'} italic`}>
+         <span className={`font-black text-white/10 text-4xl italic`}>
             {card.name[0]}
          </span>
       </div>
+      )}
 
-      <div className="bg-black/60 rounded-2xl p-4 flex justify-between text-xl md:text-2xl font-mono font-black border-2 border-white/10 shadow-lg">
+      <div className="bg-black/60 rounded-2xl py-4 px-1 flex gap-x-1 justify-between text-xl md:text-2xl font-mono font-black border-2 border-white/10 shadow-lg">
         <div className="text-red-400 flex flex-col items-center">
             <span className="text-[10px] md:text-xs uppercase opacity-60 font-sans tracking-widest">ATK</span>
             <span className="drop-shadow-sm">{card.attack}</span>
@@ -107,9 +109,9 @@ export const CardComponent: React.FC<CardProps> = ({ card, compact, isOpponent, 
         </div>
       </div>
       
-      {card.hasAttacked && !compact && (
+      {card.hasAttacked && (
         <div className="absolute inset-0 bg-black/70 flex items-center justify-center pointer-events-none backdrop-blur-[2px] z-20">
-            <span className="text-xl font-black text-white/80 uppercase -rotate-12 border-8 border-white/30 px-6 py-3 rounded-2xl scale-125 tracking-tighter italic shadow-2xl">EXAUSTO</span>
+            <span className={`${compact ? 'text-sm px-2 py-1 border-4' : 'text-xl px-6 py-3 border-8'} font-black text-white/80 uppercase -rotate-12 border-white/30 rounded-2xl scale-125 tracking-tighter italic shadow-2xl`}>EXAUSTO</span>
         </div>
       )}
     </div>
