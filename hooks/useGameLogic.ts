@@ -21,8 +21,8 @@ export const useGameLogic = () => {
   const [winner, setWinner] = useState<'player' | 'npc' | null>(null);
   const [logs, setLogs] = useState<GameLogEntry[]>([]);
   
-  const [player, setPlayer] = useState<Player>({ id: 'player', hp: 4000, hand: [], field: [], deck: [], graveyard: [] });
-  const [npc, setNpc] = useState<Player>({ id: 'npc', hp: 4000, hand: [], field: [], deck: [], graveyard: [] });
+  const [player, setPlayer] = useState<Player>({ id: 'player', hp: 8000, hand: [], field: [], deck: [], graveyard: [] });
+  const [npc, setNpc] = useState<Player>({ id: 'npc', hp: 8000, hand: [], field: [], deck: [], graveyard: [] });
   
   const [turnCount, setTurnCount] = useState(1);
   const [currentTurnPlayer, setCurrentTurnPlayer] = useState<'player' | 'npc'>('player');
@@ -68,8 +68,8 @@ export const useGameLogic = () => {
     const playerDeck = shuffle(fullDeck).map(c => ({ ...c, uniqueId: generateUniqueId(), hasAttacked: false }));
     const npcDeck = shuffle(fullDeck).map(c => ({ ...c, uniqueId: generateUniqueId(), hasAttacked: false }));
 
-    setPlayer({ id: 'player', hp: 4000, hand: playerDeck.splice(0, 5), deck: playerDeck, field: [], graveyard: [] });
-    setNpc({ id: 'npc', hp: 4000, hand: npcDeck.splice(0, 5), deck: npcDeck, field: [], graveyard: [] });
+    setPlayer({ id: 'player', hp: 8000, hand: playerDeck.splice(0, 5), deck: playerDeck, field: [], graveyard: [] });
+    setNpc({ id: 'npc', hp: 8000, hand: npcDeck.splice(0, 5), deck: npcDeck, field: [], graveyard: [] });
     setTurnCount(1);
     setCurrentTurnPlayer('player');
     setStarter('player');

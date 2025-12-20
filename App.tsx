@@ -29,6 +29,21 @@ export default function App() {
 
   const isBusy = isAIProcessing || gameOver;
 
+  const handlePhaseButton = () => {
+    if (phase === Phase.MAIN) {
+      setPhase(Phase.BATTLE);
+      return;
+    }
+
+    // Ao encerrar o turno, limpar seleções e modos locais da UI
+    setAttackMode(false);
+    setSelectedCardId(null);
+    setTributeSelectionMode(false);
+    setCardsToSacrifice([]);
+    setPendingSummonCardId(null);
+    endTurn();
+  };
+
   const handleCardClick = (card: Card, location: 'hand' | 'field') => {
     if (isBusy || currentTurnPlayer !== 'player') return;
 
@@ -131,9 +146,9 @@ export default function App() {
           <div className="w-20 h-20 bg-red-600 rounded-3xl border-4 border-white flex items-center justify-center text-5xl shadow-lg">🤖</div>
           <div className="relative">
              <div className="w-80 h-10 bg-black rounded-full border-2 border-white/20 overflow-hidden shadow-inner">
-                <div className="h-full bg-gradient-to-r from-red-600 to-red-400 transition-all duration-700" style={{width: `${(npc.hp/4000)*100}%`}}></div>
+                <div className="h-full bg-gradient-to-r from-red-600 to-red-400 transition-all duration-700" style={{width: `${(npc.hp/8000)*100}%`}}></div>
              </div>
-             <span className="absolute inset-0 flex items-center justify-center text-lg font-black drop-shadow-md">{npc.hp} / 4000 LP</span>
+             <span className="absolute inset-0 flex items-center justify-center text-lg font-black drop-shadow-md">{npc.hp} / 8000 LP</span>
              {floatingDamage?.targetId === 'npc-hp' && <div className="damage-popup right-0 top-0 text-5xl">-{floatingDamage.value}</div>}
           </div>
         </div>
@@ -149,9 +164,9 @@ export default function App() {
         <div className="flex items-center gap-6">
           <div className="relative text-right">
              <div className="w-80 h-10 bg-black rounded-full border-2 border-white/20 overflow-hidden shadow-inner">
-                <div className="h-full bg-gradient-to-r from-blue-600 to-blue-400 transition-all duration-700" style={{width: `${(player.hp/4000)*100}%`}}></div>
+                <div className="h-full bg-gradient-to-r from-blue-600 to-blue-400 transition-all duration-700" style={{width: `${(player.hp/8000)*100}%`}}></div>
              </div>
-             <span className="absolute inset-0 flex items-center justify-center text-lg font-black drop-shadow-md">{player.hp} / 4000 LP</span>
+             <span className="absolute inset-0 flex items-center justify-center text-lg font-black drop-shadow-md">{player.hp} / 8000 LP</span>
              {floatingDamage?.targetId === 'player-hp' && <div className="damage-popup left-0 top-0 text-5xl">-{floatingDamage.value}</div>}
           </div>
           <div className="w-20 h-20 bg-blue-600 rounded-3xl border-4 border-white flex items-center justify-center text-5xl shadow-lg">👤</div>
@@ -216,7 +231,7 @@ export default function App() {
                
                {currentTurnPlayer === 'player' && !isBusy && (
                  <button 
-                  onClick={() => phase === Phase.MAIN ? setPhase(Phase.BATTLE) : endTurn()} 
+                  onClick={handlePhaseButton}
                   className="bg-gradient-to-b from-yellow-400 to-orange-600 px-16 py-6 rounded-3xl text-3xl font-black uppercase hover:scale-110 active:scale-95 transition-all shadow-2xl border-b-8 border-orange-900 text-black italic tracking-tighter"
                  >
                    {phase === Phase.MAIN ? '➔ Batalhar!' : '➔ Encerrar Turno'}

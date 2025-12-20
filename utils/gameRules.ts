@@ -4,7 +4,7 @@ import { Card, Player, ElementType } from '../types';
 export const GameRules = {
   MAX_FIELD_SIZE: 3,
   INITIAL_HAND_SIZE: 4,
-  MAX_HP: 4000,
+  MAX_HP: 8000,
 
   canSummon: (player: Player, card: Card): boolean => {
     if (player.field.length >= GameRules.MAX_FIELD_SIZE) return false;
