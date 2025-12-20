@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardType, Rarity, ElementType } from '../types';
 import { collectionService } from '../services/collectionService';
 import Tooltip from './Tooltip';
@@ -55,7 +55,7 @@ export const CollectionView: React.FC<CollectionViewProps> = ({ onClose, onBack 
   const [openingPack, setOpeningPack] = useState(false);
   const [packResults, setPackResults] = useState<string[]>([]);
 
-  const collection = collectionService.getCollection();
+  const [collection, setCollection] = useState(collectionService.getCollection());
   const allCards = [...INITIAL_DECK, ...SPELL_CARDS, ...TRAP_CARDS];
 
   const filteredCards = allCards.filter(card => {
@@ -80,6 +80,8 @@ export const CollectionView: React.FC<CollectionViewProps> = ({ onClose, onBack 
     setTimeout(() => {
       const results = collectionService.openPack();
       setPackResults(results);
+      // refresh local state after opening pack so UI updates
+      setCollection(collectionService.getCollection());
       soundService.playAchievement();
     }, 1500);
   };
@@ -87,6 +89,8 @@ export const CollectionView: React.FC<CollectionViewProps> = ({ onClose, onBack 
   const handleBuyPack = () => {
     if (collectionService.buyPack()) {
       soundService.playClick();
+      // refresh local state after successful purchase so UI updates
+      setCollection(collectionService.getCollection());
     } else {
       soundService.playError();
     }
