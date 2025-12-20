@@ -219,7 +219,7 @@ export const CardComponent: React.FC<CardProps> = ({ card, compact, isOpponent, 
       </div>
 
       <div className="flex justify-between items-center px-4 py-2 mb-4 bg-black/30 rounded-2xl border border-white/10">
-         <Tooltip content={(<div className="text-sm">Tipo: <span className="font-mono">{card.type}</span></div>)}>
+         <Tooltip width="w-auto" content={(<div className="text-sm">Tipo: <span className="font-mono">{card.type}</span></div>)}>
            <span className="text-3xl cursor-help">{getTypeIcon(card.type)}</span>
          </Tooltip>
          <div className="flex space-x-1">
