@@ -291,14 +291,16 @@ export const useGameLogic = () => {
     setPlayer({ id: 'player', hp: 8000, hand: playerDeck.splice(0, 5), deck: playerDeck, field: [], graveyard: [], trapZone: [] });
     setNpc({ id: 'npc', hp: npcHp, hand: npcDeckShuffled.splice(0, 5), deck: npcDeckShuffled, field: [], graveyard: [], trapZone: [] });
     setTurnCount(1);
-    setCurrentTurnPlayer('player');
-    setStarter('player');
+    // Escolher aleatoriamente quem inicia (50% player, 50% npc)
+    const starterChoice: 'player' | 'npc' = Math.random() < 0.5 ? 'player' : 'npc';
+    setCurrentTurnPlayer(starterChoice);
+    setStarter(starterChoice);
     setPhase(Phase.MAIN);
     setLogs([]);
     setGameStarted(true);
     setGameOver(false);
     setWinner(null);
-    addLog("Batalha iniciada! Seu turno.");
+    addLog(starterChoice === 'player' ? "Batalha iniciada! Seu turno." : "Batalha iniciada! CPU começa.");
   };
 
   useEffect(() => {
