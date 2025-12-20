@@ -222,7 +222,7 @@ export default function App() {
 
       {/* Footer / Mão */}
       <footer className="bg-slate-950 p-10 border-t-8 border-white/5 z-30 shadow-[0_-30px_60px_rgba(0,0,0,0.6)] min-h-[400px]">
-         <div className="flex justify-between items-center mb-10 max-w-screen-2xl mx-auto">
+         <div className="flex justify-between items-center mb-10">
             <div className="flex gap-10 items-center">
                <div className="flex flex-col bg-slate-900/50 p-4 rounded-2xl border border-white/5">
                   <span className="text-sm font-black uppercase tracking-[0.3em] text-slate-500 mb-2">Fase Atual</span>
@@ -258,7 +258,7 @@ export default function App() {
          </div>
 
          {/* Mão do Jogador */}
-         <div className="flex gap-8 h-64 md:h-80 items-center justify-center pb-6 scrollbar-hide max-w-screen-2xl mx-auto">
+         <div className="flex gap-8 h-64 md:h-80 items-center justify-center pb-6 scrollbar-hide max-w-screen-2xl mx-auto -translate-y-32">
             {player.hand.map((card, idx) => (
               <div 
                 key={card.uniqueId} 
