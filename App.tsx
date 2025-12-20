@@ -187,7 +187,7 @@ export default function App() {
              <div
                key={card.uniqueId}
                onClick={() => handleCardClick(card, 'field')}
-               className={`transition-all duration-300 ${selectedCardId === card.uniqueId ? 'ring-[12px] ring-yellow-400 -translate-y-12 shadow-[0_50px_100px_rgba(250,204,21,0.4)]' : ''} ${cardsToSacrifice.includes(card.uniqueId) ? 'opacity-30 scale-95 grayscale' : ''}`}
+               className={`transition-all duration-300 ${selectedCardId === card.uniqueId ? '-translate-y-12 shadow-[0_50px_100px_rgba(250,204,21,0.4)]' : ''} ${cardsToSacrifice.includes(card.uniqueId) ? 'opacity-30 scale-95 grayscale' : ''}`}
              >
                <CardComponent 
                  card={card} 
@@ -244,7 +244,7 @@ export default function App() {
               <div 
                 key={card.uniqueId} 
                 onClick={() => handleCardClick(card, 'hand')} 
-                className={`shrink-0 transition-all duration-500 cursor-pointer hover:-translate-y-20 hover:scale-125 hover:z-50 ${cardsToSacrifice.includes(card.uniqueId) ? 'opacity-10 scale-50 grayscale blur-sm' : ''}`}
+                className={`shrink-0 transition-all duration-500 cursor-pointer hover:-translate-y-20 hover:scale-125 hover:z-50 ${cardsToSacrifice.includes(card.uniqueId) ? 'opacity-10 scale-50 grayscale blur-sm' : ''} ${tributeSelectionMode && pendingSummonCardId === card.uniqueId ? 'ring-8 ring-yellow-400 shadow-[0_0_30px_rgba(250,204,21,0.6)] rounded-2xl' : ''}`}
                 style={{ zIndex: 10 + idx }}
               >
                 <CardComponent card={card} compact />

@@ -54,7 +54,7 @@ export const CardComponent: React.FC<CardProps> = ({ card, compact, isOpponent, 
     relative rounded-2xl border-[3px] shadow-2xl transition-all select-none
     flex flex-col text-white overflow-hidden cursor-pointer
     ${getTypeColor(card.type)}
-    ${isActive ? 'ring-8 ring-white -translate-y-4 z-10' : 'hover:-translate-y-2 hover:brightness-110'}
+    ${isActive ? 'ring-8 ring-white -translate-y-4 z-10' : 'hover:brightness-110'}
     ${canAttack ? 'animate-pulse ring-8 ring-yellow-400 shadow-[0_0_30px_rgba(250,204,21,0.6)]' : ''}
     ${compact ? 'w-32 h-44 md:w-40 md:h-56 text-lg p-3' : 'w-44 h-64 md:w-56 md:h-80 p-5'}
     ${animationClass}
