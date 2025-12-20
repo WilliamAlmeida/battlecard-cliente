@@ -16,6 +16,7 @@ import { campaignService } from './services/campaignService';
 import { soundService } from './services/soundService';
 import { getCardsByIds } from './constants';
 import { collectionService } from './services/collectionService';
+import { statsService } from './services/statsService';
 
 type AppView = 'menu' | 'game' | 'collection' | 'achievements' | 'stats' | 'deckbuilder';
 
@@ -53,6 +54,25 @@ export default function App() {
       // Game over screen is shown inline
     }
   }, [gameOver, currentView]);
+
+  // If player finished a campaign boss, apply campaign rewards and mark defeated
+  useEffect(() => {
+    if (gameOver && winner === 'player' && gameMode === GameMode.CAMPAIGN && lastBossId) {
+      const boss = campaignService.getBoss(lastBossId);
+      if (boss) {
+        // Grant rewards
+        if (boss.reward?.coins) collectionService.addCoins(boss.reward.coins);
+        if (boss.reward?.packs) collectionService.addPack(boss.reward.packs);
+        if (boss.reward?.cards) boss.reward.cards.forEach(cardId => collectionService.addCard(cardId));
+
+        // Mark boss defeated and record stats
+        campaignService.defeatBoss(lastBossId);
+        statsService.recordBossDefeated(lastBossId);
+
+        addLog(`${boss.name} derrotado! Recebido: ${boss.reward?.coins || 0} moedas, ${boss.reward?.packs || 0} pacotes.`, 'info');
+      }
+    }
+  }, [gameOver, winner, gameMode, lastBossId, addLog]);
 
   const isBusy = isAIProcessing || gameOver;
 
