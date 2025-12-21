@@ -132,7 +132,8 @@ export const MainMenu: React.FC<MainMenuProps> = ({
 
   if (showCampaign) {
     return (
-      <div className="flex flex-col items-center justify-start min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 p-8 overflow-y-auto">
+      <div className="fixed inset-0 bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 z-50 overflow-y-auto">
+        <div className="flex flex-col items-center justify-start min-h-screen p-8">
         <button 
           onClick={() => setShowCampaign(false)}
           className="absolute top-8 left-8 bg-slate-700 px-6 py-3 rounded-xl font-bold hover:bg-slate-600 transition-colors"
@@ -197,14 +198,14 @@ export const MainMenu: React.FC<MainMenuProps> = ({
               )}
             </div>
           ))}
-        </div>
-      </div>
+        </div>        </div>      </div>
     );
   }
 
   if (selectedMode === GameMode.QUICK_BATTLE || selectedMode === GameMode.DRAFT) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 p-8">
+      <div className="fixed inset-0 bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 z-50 overflow-y-auto">
+        <div className="flex flex-col items-center justify-center min-h-screen p-8">
         <button 
           onClick={() => setSelectedMode(null)}
           className="absolute top-8 left-8 bg-slate-700 px-6 py-3 rounded-xl font-bold hover:bg-slate-600 transition-colors"
@@ -249,13 +250,15 @@ export const MainMenu: React.FC<MainMenuProps> = ({
         >
           {selectedMode === GameMode.QUICK_BATTLE ? '⚔️ INICIAR BATALHA!' : '🎴 INICIAR DRAFT!'}
         </button>
+        </div>
       </div>
     );
   }
 
   if (showSurvival) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 p-8">
+      <div className="fixed inset-0 bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 z-50 overflow-y-auto">
+        <div className="flex flex-col items-center justify-center min-h-screen p-8">
         <button 
           onClick={() => setShowSurvival(false)}
           className="absolute top-8 left-8 bg-slate-700 px-6 py-3 rounded-xl font-bold hover:bg-slate-600 transition-colors"
@@ -284,13 +287,15 @@ export const MainMenu: React.FC<MainMenuProps> = ({
         >
           🛡️ INICIAR SURVIVAL!
         </button>
+        </div>
       </div>
     );
   }
 
   // Menu Principal
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 p-8">
+    <div className="fixed inset-0 bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 z-50 overflow-y-auto">
+      <div className="flex flex-col items-center justify-center min-h-screen p-8">
       <h1 className="text-7xl md:text-8xl font-black mb-4 text-yellow-500 italic drop-shadow-2xl text-center select-none tracking-tighter">
         PokéCard Battle
       </h1>
@@ -396,6 +401,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({
         >
           📊 Estatísticas
         </button>
+      </div>
       </div>
     </div>
   );
