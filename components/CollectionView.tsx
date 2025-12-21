@@ -151,7 +151,7 @@ export const CollectionView: React.FC<CollectionViewProps> = ({ onClose, onBack 
             onClick={handleClose}
             className="bg-slate-700 px-6 py-3 rounded-xl font-bold hover:bg-slate-600"
           >
-            ✕ Fechar
+            ✕ <span className="hidden sm:inline">Fechar</span>
           </button>
         </div>
 
