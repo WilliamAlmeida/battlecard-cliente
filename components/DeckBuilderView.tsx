@@ -173,7 +173,7 @@ export const DeckBuilderView: React.FC<DeckBuilderViewProps> = ({ onBack, onClos
               </button>
             </div>
 
-            <div className="space-y-3">
+            <div className="bg-slate-900/50 rounded-xl p-4 max-h-[690px] overflow-y-auto space-y-3">
               {customDecks.map(deck => (
                 <div 
                   key={deck.id}
@@ -254,7 +254,7 @@ export const DeckBuilderView: React.FC<DeckBuilderViewProps> = ({ onBack, onClos
                 </div>
 
                 {/* Deck Cards */}
-                <div className="bg-slate-900/50 rounded-xl p-4 max-h-96 overflow-y-auto mb-4">
+                <div className="bg-slate-900/50 rounded-xl p-4 max-h-[500px] overflow-y-auto mb-4">
                   {deckCards.length === 0 ? (
                     <div className="text-center text-slate-500 py-8">
                       Adicione cartas ao deck
@@ -290,7 +290,7 @@ export const DeckBuilderView: React.FC<DeckBuilderViewProps> = ({ onBack, onClos
                   disabled={deckCards.length < MIN_DECK_SIZE || deckCards.length > MAX_DECK_SIZE || !deckName.trim()}
                   className={`
                     w-full py-4 rounded-xl font-bold text-lg transition-all
-                    ${deckCards.length >= 20 && deckCards.length <= 40 && deckName.trim()
+                    ${deckCards.length >= MIN_DECK_SIZE && deckCards.length <= MAX_DECK_SIZE && deckName.trim()
                       ? 'bg-green-600 hover:bg-green-500'
                       : 'bg-slate-700 text-slate-500 cursor-not-allowed'
                     }
@@ -343,7 +343,7 @@ export const DeckBuilderView: React.FC<DeckBuilderViewProps> = ({ onBack, onClos
                       key={card.id}
                       onClick={() => canAdd && handleAddCard(card.id)}
                       className={`
-                        relative p-2 bg-slate-800 rounded-lg border-2 transition-all
+                        relative p-2 bg-slate-800 rounded-lg border-2 transition-all select-none
                         ${getRarityColor(card.rarity)}
                         ${canAdd ? 'cursor-pointer hover:scale-105' : 'opacity-50 cursor-not-allowed'}
                       `}
