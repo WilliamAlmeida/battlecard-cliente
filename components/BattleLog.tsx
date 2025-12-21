@@ -25,7 +25,7 @@ export const BattleLog: React.FC<BattleLogProps> = ({ logs, isOpen: externalOpen
           onClick={toggle}
           className="bg-slate-800 border-2 border-r-0 border-white/20 p-4 rounded-l-2xl shadow-2xl hover:bg-slate-700 transition-colors pointer-events-auto"
         >
-          <span className="text-2xl">{isOpen ? '👉' : '📜'}</span>
+          <span className="sm:text-2xl">{isOpen ? '👉' : '📜'}</span>
         </button>
 
         {/* Log Panel */}

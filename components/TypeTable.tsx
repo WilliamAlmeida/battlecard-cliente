@@ -57,18 +57,17 @@ export const TypeTable: React.FC<TypeTableProps> = ({ isOpen: externalOpen, onTo
   };
 
   return (
-    <div className={`fixed right-0 top-72 z-40 transition-transform duration-300 ${isOpen ? 'translate-x-0' : 'translate-x-[calc(100%-56px)]'} ${isOpen ? '' : 'pointer-events-none'}`}>
+    <div className={`fixed right-0 top-[266px] z-40 transition-transform duration-300 ${isOpen ? 'translate-x-0' : 'translate-x-[calc(100%-56px)]'} ${isOpen ? '' : 'pointer-events-none'}`}>
       <div className="flex items-start">
         <button onClick={toggle} className="bg-slate-800 border-2 border-r-0 border-white/20 p-4 rounded-l-2xl shadow-2xl hover:bg-slate-700 transition-colors pointer-events-auto" aria-label="Abrir tabela">
-          <span className="text-2xl">{isOpen ? '🔬' : '📊'}</span>
+          <span className="sm:text-2xl">{isOpen ? '👉' : '📊'}</span>
         </button>
 
-        <div className="w-80 sm:max-w-[70vw] h-[60vh] sm:h-auto bg-slate-900/95 border-2 border-white/20 shadow-[0_0_50px_rgba(0,0,0,0.5)] backdrop-blur-md flex flex-col rounded-l-none rounded-r-lg p-2 overflow-hidden">
+        <div className="w-80 sm:w-[70vw] h-[60vh] sm:h-auto bg-slate-900/95 border-2 border-white/20 shadow-[0_0_50px_rgba(0,0,0,0.5)] backdrop-blur-md flex flex-col rounded-l-none rounded-r-lg p-2 overflow-hidden">
           <div className="flex items-center justify-between px-4 border-b border-white/5">
             <div className="font-black text-lg text-slate-100">Tabela de Efeitos</div>
             <div className="flex items-center gap-2">
-              <div className="text-slate-300 mr-2">Multiplicadores: <span className="font-semibold text-emerald-300">x2</span> / <span className="font-semibold text-amber-300">x0.5</span> / <span className="font-semibold text-red-300">x0</span></div>
-              <button onClick={toggle} className="text-slate-300 hover:text-white bg-slate-800/50 px-2 py-1 rounded" aria-label="Fechar tabela">✕</button>
+              <div className="text-sm text-slate-300 mr-2">Multiplicadores: <span className="font-semibold text-emerald-300">x2</span> / <span className="font-semibold text-amber-300">x0.5</span> / <span className="font-semibold text-red-300">x0</span></div>
             </div>
           </div>
 
