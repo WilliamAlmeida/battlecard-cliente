@@ -63,7 +63,7 @@ export const TypeTable: React.FC<TypeTableProps> = ({ isOpen: externalOpen, onTo
           <span className="text-2xl">{isOpen ? '🔬' : '📊'}</span>
         </button>
 
-        <div className="w-80 sm:max-w-screen-lg h-[60vh] sm:h-auto bg-slate-900/95 border-2 border-white/20 shadow-[0_0_50px_rgba(0,0,0,0.5)] backdrop-blur-md flex flex-col rounded-l-none rounded-r-lg p-2 overflow-hidden">
+        <div className="w-80 sm:max-w-[70vw] h-[60vh] sm:h-auto bg-slate-900/95 border-2 border-white/20 shadow-[0_0_50px_rgba(0,0,0,0.5)] backdrop-blur-md flex flex-col rounded-l-none rounded-r-lg p-2 overflow-hidden">
           <div className="flex items-center justify-between px-4 border-b border-white/5">
             <div className="font-black text-lg text-slate-100">Tabela de Efeitos</div>
             <div className="flex items-center gap-2">
