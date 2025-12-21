@@ -139,7 +139,7 @@ export const CardComponent: React.FC<CardProps> = ({ card, compact, isOpponent, 
             <span className="cursor-help">🪄</span>
           </Tooltip>
         </div>
-        <div className="flex justify-between items-start mb-2">
+        <div className="flex justify-between items-start mb-2 pointer-events-none">
           <span className="font-black text-lg truncate leading-tight drop-shadow-lg">{card.name}</span>
         </div>
         <div className="flex-1 flex items-center justify-center">
@@ -166,7 +166,7 @@ export const CardComponent: React.FC<CardProps> = ({ card, compact, isOpponent, 
             <span className="cursor-help">🪤</span>
           </Tooltip>
         </div>
-        <div className="flex justify-between items-start mb-2">
+        <div className="flex justify-between items-start mb-2 pointer-events-none">
           <span className="font-black text-lg truncate leading-tight drop-shadow-lg">{card.name}</span>
         </div>
         <div className="flex-1 flex items-center justify-center">
@@ -208,48 +208,42 @@ export const CardComponent: React.FC<CardProps> = ({ card, compact, isOpponent, 
       )}
 
       {/* Rarity indicator for legendaries */}
-      {card.rarity === Rarity.LEGENDARY && (
-        <div className="absolute -top-1 left-1/2 -translate-x-1/2">
+      {card.rarity !== Rarity.LEGENDARY && (
+        <div className="absolute -bottom-1 sm:bottom-0 left-1/2 -translate-x-1/2 pointer-events-none">
           <span className="text-yellow-400 text-sm animate-pulse">👑</span>
         </div>
       )}
 
-      <div className="flex justify-between items-start mb-4">
-        <span className="font-black text-xl md:text-2xl truncate leading-tight drop-shadow-lg tracking-tighter italic max-w-full overflow-hidden">{card.name}</span>
+      <div className="flex justify-between items-start mb-4 pointer-events-none">
+        <span className="font-semibold sm:font-bold text-lg md:text-2xl truncate leading-tight drop-shadow-lg tracking-tighter italic max-w-full overflow-hidden">{card.name}</span>
       </div>
 
       <div className="flex justify-between items-center px-4 py-2 mb-4 bg-black/30 rounded-2xl border border-white/10">
          <Tooltip width="w-auto" content={(<div className="text-sm">Tipo: <span className="font-mono">{card.type}</span></div>)}>
-           <span className="text-3xl cursor-help">{getTypeIcon(card.type)}</span>
+           <span className="sm:text-3xl cursor-help">{getTypeIcon(card.type)}</span>
          </Tooltip>
-         <div className="flex space-x-1">
+         {compact ? (
+           <div className="flex items-center space-x-1">
+           <span className="text-yellow-300 text-lg drop-shadow-[0_0_5px_rgba(0,0,0,0.5)]">★</span>
+           <span className="text-yellow-100 text-lg font-bold">{card.level}</span>
+           </div>
+         ) : (
+           <div className="flex space-x-1">
            {Array.from({length: card.level}).map((_, i) => (
              <span key={i} className="text-yellow-300 text-lg drop-shadow-[0_0_5px_rgba(0,0,0,0.5)]">★</span>
            ))}
-         </div>
-      </div>
-
-      {!compact && (
-      <div className="flex-1 bg-black/20 rounded-2xl flex flex-col items-center justify-center mb-4 border-2 border-white/5 shadow-inner">
-         <span className={`font-black text-white/10 text-4xl italic`}>
-            {card.name[0]}
-         </span>
-         {card.ability && (
-           <div className="mt-2 px-2 py-1 bg-purple-900/50 rounded text-[10px] text-purple-300 text-center">
-             {card.ability.name}
            </div>
          )}
       </div>
-      )}
 
-      <div className="bg-black/60 rounded-2xl py-4 px-1 flex gap-x-1 justify-between text-xl md:text-2xl font-mono font-black border-2 border-white/10 shadow-lg">
-        <div className="text-red-400 flex flex-col items-center">
-            <span className="text-[10px] md:text-xs uppercase opacity-60 font-sans tracking-widest">ATK</span>
-            <span className="drop-shadow-sm">{card.attack}</span>
+      <div className="bg-black/60 rounded-2xl py-2 px-1 flex gap-x-1 justify-around text-xl md:text-2xl font-mono font-black border-2 border-white/10 shadow-lg">
+        <div className="text-red-400 flex flex-col items-center justify-center">
+            <span className="text-[10px] md:text-xs uppercase opacity-60 font-sans tracking-widest leading-none">ATK</span>
+            <span className={`drop-shadow-sm ${compact ? 'text-sm' : ''}`}>{card.attack}</span>
         </div>
-        <div className="text-blue-400 flex flex-col items-center">
-             <span className="text-[10px] md:text-xs uppercase opacity-60 font-sans tracking-widest">DEF</span>
-             <span className="drop-shadow-sm">{card.defense}</span>
+        <div className="text-blue-400 flex flex-col items-center justify-center">
+             <span className="text-[10px] md:text-xs uppercase opacity-60 font-sans tracking-widest leading-none">DEF</span>
+             <span className={`drop-shadow-sm ${compact ? 'text-sm' : ''}`}>{card.defense}</span>
         </div>
       </div>
       
