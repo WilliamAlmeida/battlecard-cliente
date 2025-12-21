@@ -89,7 +89,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 gap-3 mb-4">
+          <div className="grid grid-cols-1 gap-3 mb-4 max-h-40 overflow-y-auto px-2">
             {customDecks.map(deck => (
               <button
                 key={deck.id}
@@ -98,7 +98,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({
                   onSelectDeck(deck.id);
                 }}
                 className={`
-                  p-4 rounded-xl border-2 transition-all text-left
+                  p-2 rounded-xl border-2 transition-all text-left
                   ${selectedDeckId === deck.id
                     ? 'bg-yellow-900/30 border-yellow-500'
                     : 'bg-slate-700 border-slate-600 hover:border-slate-500'
