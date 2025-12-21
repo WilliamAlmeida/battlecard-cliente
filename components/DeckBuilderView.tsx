@@ -300,7 +300,7 @@ export const DeckBuilderView: React.FC<DeckBuilderViewProps> = ({ onBack, onClos
                       Adicione cartas ao deck
                     </div>
                   ) : (
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                       {Object.entries(getDeckCardCounts()).map(([cardId, count]) => {
                         const card = allCards.find(c => c.id === cardId);
                         if (!card) return null;
@@ -389,7 +389,7 @@ export const DeckBuilderView: React.FC<DeckBuilderViewProps> = ({ onBack, onClos
 
             {/* Available Cards */}
             <div className="bg-slate-900/50 rounded-xl p-4 overflow-y-auto flex-1 min-h-0">
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {filteredAvailableCards.map(card => {
                   const inDeckCount = deckCards.filter(c => c === card.id).length;
                   const canAdd = inDeckCount < 3 && (isCreatingNew || selectedDeckId);
