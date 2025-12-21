@@ -548,7 +548,7 @@ export default function App() {
          </div>
 
          {/* Mão do Jogador */}
-         <div className="flex gap-8 h-64 md:h-80 items-center justify-center pb-6 scrollbar-hide max-w-screen-2xl w-fit mx-auto -translate-y-32">
+         <div className="flex gap-8 h-64 md:h-80 items-center justify-center pb-6 scrollbar-hide max-w-screen-2xl w-fit mx-auto -translate-y-36">
             {player.hand.map((card, idx) => (
               <div 
                 key={card.uniqueId} 
