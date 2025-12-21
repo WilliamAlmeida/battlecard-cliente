@@ -160,12 +160,12 @@ export const DeckBuilderView: React.FC<DeckBuilderViewProps> = ({ onBack, onClos
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-900 z-50 overflow-y-auto sm:overflow-hidden">
+    <div className="fixed inset-0 bg-slate-900 z-50 overflow-y-auto sm:overflow-hidden select-none">
       <div className="p-8 h-full flex flex-col min-h-0">
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-lg sm:text-4xl font-black text-yellow-500">🔧 Deck Builder</h1>
+            <h1 className="text-4xl font-black text-yellow-500">🔧 Deck Builder</h1>
             <p className="text-sm sm:text-base text-slate-400">Crie e edite seus decks personalizados</p>
           </div>
           <button 
@@ -197,7 +197,7 @@ export const DeckBuilderView: React.FC<DeckBuilderViewProps> = ({ onBack, onClos
                 <div 
                   key={deck.id}
                   className={`
-                    p-4 rounded-xl border-2 cursor-pointer transition-all select-none
+                    p-4 rounded-xl border-2 cursor-pointer transition-all
                     ${selectedDeckId === deck.id 
                       ? 'bg-yellow-900/30 border-yellow-500' 
                       : 'bg-slate-700 border-slate-600 hover:border-slate-500'
@@ -237,7 +237,7 @@ export const DeckBuilderView: React.FC<DeckBuilderViewProps> = ({ onBack, onClos
           </div>
 
           {/* Deck Atual */}
-          <div className="bg-slate-800 p-6 rounded-2xl flex flex-col h-full max-h-[50vh] lg:max-h-none min-h-0">
+          <div className={`bg-slate-800 p-6 rounded-2xl flex flex-col h-full max-h-[50vh] lg:max-h-none min-h-0 ${(isCreatingNew || selectedDeckId) ? '' : 'hidden'}`}>
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold">
                 {isCreatingNew || selectedDeckId ? 'Editando Deck' : 'Selecione um deck'}
@@ -311,7 +311,7 @@ export const DeckBuilderView: React.FC<DeckBuilderViewProps> = ({ onBack, onClos
                               const firstIndex = deckCards.indexOf(cardId);
                               if (firstIndex !== -1) handleRemoveCard(firstIndex);
                             }}
-                            className={`p-3 rounded-xl border-2 transition-all relative cursor-pointer select-none ${getRarityColor(card.rarity)}`}
+                            className={`p-3 rounded-xl border-2 transition-all relative cursor-pointer ${getRarityColor(card.rarity)}`}
                           >
                             {count > 1 && (
                               <div className="absolute -top-2 -right-2 bg-yellow-500 text-black w-6 h-6 rounded-full flex items-center justify-center font-bold text-sm">
@@ -359,8 +359,13 @@ export const DeckBuilderView: React.FC<DeckBuilderViewProps> = ({ onBack, onClos
           </div>
 
           {/* Cartas Disponíveis */}
-          <div className="bg-slate-800 p-6 rounded-2xl flex flex-col h-full max-h-[50vh] lg:max-h-none min-h-0">
-            <h2 className="text-xl font-bold mb-4">Cartas Disponíveis</h2>
+          <div className={`bg-slate-800 p-6 rounded-2xl flex flex-col h-full max-h-[50vh] lg:max-h-none min-h-0 ${(isCreatingNew || selectedDeckId) ? '' : 'col-span-2'}`}>
+            <h2 className="text-xl font-bold mb-4">
+              Cartas Disponíveis
+              <span className="ml-2 text-sm text-slate-400">
+                ({filteredAvailableCards.length})
+              </span>
+            </h2>
 
             {/* Filters */}
             <div className="space-y-2 mb-4">
@@ -389,7 +394,7 @@ export const DeckBuilderView: React.FC<DeckBuilderViewProps> = ({ onBack, onClos
 
             {/* Available Cards */}
             <div className="bg-slate-900/50 rounded-xl p-4 overflow-y-auto flex-1 min-h-0">
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              <div className={`grid grid-cols-2 sm:grid-cols-3 gap-2 ${(isCreatingNew || selectedDeckId) ? '' : 'sm:grid-cols-4'}`}>
                 {filteredAvailableCards.map(card => {
                   const inDeckCount = deckCards.filter(c => c === card.id).length;
                   const canAdd = inDeckCount < 3 && (isCreatingNew || selectedDeckId);
@@ -398,7 +403,7 @@ export const DeckBuilderView: React.FC<DeckBuilderViewProps> = ({ onBack, onClos
                     <div
                       key={card.id}
                       onClick={() => canAdd && handleAddCard(card.id)}
-                      className={`p-3 rounded-xl border-2 transition-all relative select-none ${getRarityColor(card.rarity)} ${canAdd ? 'cursor-pointer hover:scale-105' : 'opacity-50 cursor-not-allowed'}`}
+                      className={`p-3 rounded-xl border-2 transition-all relative ${getRarityColor(card.rarity)} ${canAdd ? 'cursor-pointer hover:scale-105' : 'opacity-50 cursor-not-allowed'}`}
                     >
                       {inDeckCount > 0 && (
                         <div className="absolute -top-2 -right-2 bg-blue-500 text-white w-6 h-6 rounded-full flex items-center justify-center font-bold text-sm">
