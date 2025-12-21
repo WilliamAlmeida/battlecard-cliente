@@ -237,18 +237,26 @@ export default function App() {
 
   // Handle starting a game from menu
   const handleStartGame = (mode: GameMode, difficulty: AIDifficulty, bossId?: string, deckId?: string) => {
-    // Try to use the selected custom deck, or last one if not specified
+    // Try to use the selected custom deck, but require explicit selection if custom decks exist
     const customDecks = collectionService.getCustomDecks();
     let playerDeckBase = undefined;
-    
+
     if (customDecks && customDecks.length > 0) {
-      const targetDeck = deckId 
-        ? customDecks.find(d => d.id === deckId)
-        : customDecks[customDecks.length - 1];
-      
+      const effectiveDeckId = deckId ?? selectedDeckId;
+      if (!effectiveDeckId) {
+        addLog('Por favor selecione um deck antes de iniciar a batalha.');
+        setShowNeedDeckModal(true);
+        return;
+      }
+
+      const targetDeck = customDecks.find(d => d.id === effectiveDeckId);
       if (targetDeck) {
         playerDeckBase = getCardsByIds(targetDeck.cards);
         console.log('Using player custom deck:', targetDeck.name, 'with', targetDeck.cards.length, 'cards');
+      } else {
+        addLog('Deck selecionado não encontrado. Por favor selecione outro deck.');
+        setShowNeedDeckModal(true);
+        return;
       }
     } else {
       console.log('No custom decks found, using default INITIAL_DECK');

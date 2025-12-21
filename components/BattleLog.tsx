@@ -8,7 +8,7 @@ interface BattleLogProps {
 }
 
 export const BattleLog: React.FC<BattleLogProps> = ({ logs, isOpen: externalOpen, onToggle }) => {
-  const [internalOpen, setInternalOpen] = useState(true);
+  const [internalOpen, setInternalOpen] = useState();
   const isControlled = typeof externalOpen === 'boolean' && typeof onToggle === 'function';
   const isOpen = isControlled ? externalOpen! : internalOpen;
 
