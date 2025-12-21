@@ -178,79 +178,87 @@ export const MainMenu: React.FC<MainMenuProps> = ({
 
   if (showCampaign) {
     return (
-      <div className="fixed inset-0 bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 z-50 overflow-y-auto">
+      <div className="fixed inset-0 bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 z-50 overflow-y-auto select-none">
         <div className="flex flex-col items-center justify-start min-h-screen p-8">
-        <button 
-          onClick={() => setShowCampaign(false)}
-          className="absolute top-8 left-8 bg-slate-700 px-6 py-3 rounded-xl font-bold hover:bg-slate-600 transition-colors"
-        >
-          ← Voltar
-        </button>
+          <button 
+            onClick={() => setShowCampaign(false)}
+            className="absolute top-8 left-8 bg-slate-700 px-6 py-3 rounded-xl font-bold hover:bg-slate-600 transition-colors"
+          >
+            ← Voltar
+          </button>
 
-        <h1 className="text-5xl font-black text-yellow-500 italic mb-2 mt-12 sm:mt-8">CAMPANHA</h1>
-        <p className="text-slate-400 mb-8">Progresso: {campaignProgress.defeated}/{campaignProgress.total} bosses derrotados</p>
+          <h1 className="text-4xl font-black text-yellow-500 italic mb-2 mt-24 sm:mt-12">CAMPANHA</h1>
+          <p className="text-slate-400 mb-8">Progresso: {campaignProgress.defeated}/{campaignProgress.total} bosses derrotados</p>
 
-        <div className="max-w-2xl mb-8">
-          <DeckSelector />
-        </div>
+          <div className="max-w-2xl mb-8">
+            <DeckSelector />
+          </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl">
-          {campaignService.getBosses().map(boss => (
-            <div 
-              key={boss.id}
-              className={`
-                relative p-6 rounded-2xl border-4 transition-all cursor-pointer
-                ${boss.unlocked 
-                  ? boss.defeated 
-                    ? 'bg-green-900/30 border-green-600 hover:bg-green-900/50' 
-                    : 'bg-slate-800 border-yellow-500 hover:bg-slate-700 hover:scale-105'
-                  : 'bg-slate-900/50 border-slate-700 opacity-50 cursor-not-allowed'
-                }
-              `}
-              onClick={() => boss.unlocked && handleStartCampaign(boss.id)}
-            >
-              {boss.defeated && (
-                <div className="absolute top-2 right-2 text-3xl">✅</div>
-              )}
-              {!boss.unlocked && (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-6xl">🔒</span>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl">
+            {campaignService.getBosses().map(boss => (
+              <div 
+                key={boss.id}
+                className={`
+                  relative p-6 rounded-2xl border-4 transition-all cursor-pointer
+                  ${boss.unlocked 
+                    ? boss.defeated 
+                      ? 'bg-green-900/30 border-green-600 hover:bg-green-900/50' 
+                      : 'bg-slate-800 border-yellow-500 hover:bg-slate-700 hover:scale-105'
+                    : 'bg-slate-900/50 border-slate-700 opacity-50 cursor-not-allowed'
+                  }
+                `}
+                onClick={() => boss.unlocked && handleStartCampaign(boss.id)}
+              >
+                {boss.defeated && (
+                  <div className="absolute top-2 right-2 text-3xl">✅</div>
+                )}
+                {!boss.unlocked && (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-6xl">🔒</span>
+                  </div>
+                )}
+                
+                <div className="text-5xl mb-4">{boss.avatar}</div>
+                <h3 className="text-2xl font-black mb-2">{boss.name}</h3>
+                <p className="text-sm text-slate-400 mb-4 line-clamp-2">{boss.description}</p>
+                
+                <div className="flex justify-between items-center text-sm">
+                  <span className={`px-3 py-1 rounded-full font-bold ${
+                    boss.difficulty === AIDifficulty.EASY ? 'bg-green-600' :
+                    boss.difficulty === AIDifficulty.NORMAL ? 'bg-yellow-600' :
+                    boss.difficulty === AIDifficulty.HARD ? 'bg-orange-600' :
+                    'bg-red-600'
+                  }`}>
+                    {boss.difficulty}
+                  </span>
+                  <span className="text-yellow-400">💰 {boss.reward.coins}</span>
                 </div>
-              )}
-              
-              <div className="text-5xl mb-4">{boss.avatar}</div>
-              <h3 className="text-2xl font-black mb-2">{boss.name}</h3>
-              <p className="text-sm text-slate-400 mb-4 line-clamp-2">{boss.description}</p>
-              
-              <div className="flex justify-between items-center text-sm">
-                <span className={`px-3 py-1 rounded-full font-bold ${
-                  boss.difficulty === AIDifficulty.EASY ? 'bg-green-600' :
-                  boss.difficulty === AIDifficulty.NORMAL ? 'bg-yellow-600' :
-                  boss.difficulty === AIDifficulty.HARD ? 'bg-orange-600' :
-                  'bg-red-600'
-                }`}>
-                  {boss.difficulty}
-                </span>
-                <span className="text-yellow-400">💰 {boss.reward.coins}</span>
+                
+                {boss.specialRules && boss.specialRules.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-white/10">
+                    <p className="text-xs text-slate-500 mb-2">Regras Especiais:</p>
+                    {boss.specialRules.map(rule => (
+                      <p key={rule.id} className="text-xs text-purple-400">{rule.name}</p>
+                    ))}
+                  </div>
+                )}
               </div>
-              
-              {boss.specialRules && boss.specialRules.length > 0 && (
-                <div className="mt-4 pt-4 border-t border-white/10">
-                  <p className="text-xs text-slate-500 mb-2">Regras Especiais:</p>
-                  {boss.specialRules.map(rule => (
-                    <p key={rule.id} className="text-xs text-purple-400">{rule.name}</p>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>        </div>      </div>
+            ))}
+
+            <div className="p-6 rounded-2xl border-4 border-dashed border-slate-600 bg-slate-900/50 flex flex-col items-center justify-center text-slate-500">
+              <div className="text-5xl mb-4">⏳</div>
+              <h3 className="text-2xl font-black mb-2">Em Breve</h3>
+              <p className="text-sm text-slate-400 text-center">Novos líderes e desafios estão a caminho!</p>
+             </div> 
+          </div>
+        </div>
+      </div>
     );
   }
 
   if (selectedMode === GameMode.QUICK_BATTLE || selectedMode === GameMode.DRAFT) {
     return (
-      <div className="fixed inset-0 bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 z-50 overflow-y-auto">
+      <div className="fixed inset-0 bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 z-50 overflow-y-auto select-none">
         <div className="flex flex-col items-center justify-center min-h-screen p-8">
         <button 
           onClick={() => setSelectedMode(null)}
@@ -259,7 +267,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({
           ← Voltar
         </button>
 
-        <h1 className="text-3xl sm:text-5xl font-black text-yellow-500 italic mb-4 sm:mb-8">
+        <h1 className="text-4xl font-black text-yellow-500 italic mb-4 sm:mb-8">
           {selectedMode === GameMode.QUICK_BATTLE ? 'BATALHA RÁPIDA' : 'MODO DRAFT'}
         </h1>
 
@@ -303,7 +311,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({
 
   if (showSurvival) {
     return (
-      <div className="fixed inset-0 bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 z-50 overflow-y-auto">
+      <div className="fixed inset-0 bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 z-50 overflow-y-auto select-none">
         <div className="flex flex-col items-center justify-center min-h-screen p-8">
         <button 
           onClick={() => setShowSurvival(false)}
@@ -312,7 +320,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({
           ← Voltar
         </button>
 
-        <h1 className="text-5xl font-black text-yellow-500 italic mb-4 mt-12 sm:mt-0">MODO SURVIVAL</h1>
+        <h1 className="text-4xl font-black text-yellow-500 italic mb-4">MODO SURVIVAL</h1>
         <p className="text-slate-400 mb-8">Vença o máximo de batalhas seguidas! Seu recorde: <span className="text-yellow-400 font-bold">{stats.survivalBestWave} ondas</span></p>
 
         <DeckSelector />
@@ -340,15 +348,15 @@ export const MainMenu: React.FC<MainMenuProps> = ({
 
   // Menu Principal
   return (
-    <div className="fixed inset-0 bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 z-50 overflow-y-auto">
+    <div className="fixed inset-0 bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 z-50 overflow-y-auto select-none">
       <div className="flex flex-col items-center justify-center min-h-screen p-8">
-      <h1 className="text-7xl md:text-8xl font-black mb-4 text-yellow-500 italic drop-shadow-2xl text-center select-none tracking-tighter">
+      <h1 className="text-7xl md:text-8xl font-black mb-4 text-yellow-500 italic drop-shadow-2xl text-center tracking-tighter">
         PokéCard Battle
       </h1>
-      <p className="text-slate-400 mb-12 text-lg">Generation 1 Edition</p>
+      <p className="text-slate-400 mb-6 text-lg">Seja o melhor duelista de PokéCards!</p>
 
       {/* Stats rápidos */}
-      <div className="flex gap-8 mb-12 flex-wrap justify-center">
+      <div className="flex gap-4 mb-6 flex-wrap justify-center">
         <div className="bg-slate-800/50 px-6 py-3 rounded-xl text-center">
           <div className="text-2xl font-bold text-green-400">{stats.totalWins}</div>
           <div className="text-xs text-slate-500 uppercase">Vitórias</div>
@@ -368,7 +376,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({
       </div>
 
       {/* Modos de Jogo */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12 max-w-4xl">
+      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6 mb-12 max-w-4xl">
         <button
           onClick={() => handleModeSelect(GameMode.QUICK_BATTLE)}
           className="bg-gradient-to-br from-red-600 to-orange-600 p-8 rounded-3xl text-left hover:scale-105 transition-all shadow-2xl border-b-8 border-red-900 group"
@@ -448,6 +456,10 @@ export const MainMenu: React.FC<MainMenuProps> = ({
           📊 Estatísticas
         </button>
       </div>
+
+        <div className="text-xs text-slate-600 mt-4">
+          Last updated: 21/06/2024 | v1.0.3
+        </div>
       </div>
     </div>
   );
