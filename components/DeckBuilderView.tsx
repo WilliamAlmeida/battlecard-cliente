@@ -144,27 +144,30 @@ export const DeckBuilderView: React.FC<DeckBuilderViewProps> = ({ onBack, onClos
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-900 z-50 overflow-hidden">
+    <div className="fixed inset-0 bg-slate-900 z-50 overflow-y-auto sm:overflow-hidden">
       <div className="p-8 h-full flex flex-col min-h-0">
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-4xl font-black text-yellow-500">🔧 Deck Builder</h1>
-            <p className="text-slate-400">Crie e edite seus decks personalizados</p>
+            <h1 className="text-lg sm:text-4xl font-black text-yellow-500">🔧 Deck Builder</h1>
+            <p className="text-sm sm:text-base text-slate-400">Crie e edite seus decks personalizados</p>
           </div>
           <button 
             onClick={handleClose}
-            className="bg-slate-700 px-6 py-3 rounded-xl font-bold hover:bg-slate-600"
+            className="bg-slate-700 px-4 py-2 sm:px-6 sm:py-3 rounded-xl font-bold hover:bg-slate-600"
           >
-            ✕ Fechar
+            ✕ <span className="hidden sm:inline">Fechar</span>
           </button>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 flex-1 min-h-0">
+        <div className="sm:grid sm:grid-cols-1 lg:grid-cols-3 gap-8 flex-1 min-h-0 space-y-4 sm:space-y-0">
           {/* Decks Salvos */}
-          <div className="bg-slate-800 p-6 rounded-2xl flex flex-col h-full min-h-0">
+          <div className="bg-slate-800 p-6 rounded-2xl flex flex-col h-full max-h-[50vh] lg:max-h-none min-h-0">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold">Meus Decks</h2>
+              <h2 className="text-xl font-bold">
+                Meus Decks
+                <span className="ml-2 text-sm text-slate-400">({customDecks.length})</span>
+              </h2>
               <button
                 onClick={handleCreateNewDeck}
                 className="bg-green-600 px-4 py-2 rounded-xl font-bold text-sm hover:bg-green-500"
@@ -178,7 +181,7 @@ export const DeckBuilderView: React.FC<DeckBuilderViewProps> = ({ onBack, onClos
                 <div 
                   key={deck.id}
                   className={`
-                    p-4 rounded-xl border-2 cursor-pointer transition-all
+                    p-4 rounded-xl border-2 cursor-pointer transition-all select-none
                     ${selectedDeckId === deck.id 
                       ? 'bg-yellow-900/30 border-yellow-500' 
                       : 'bg-slate-700 border-slate-600 hover:border-slate-500'
@@ -213,10 +216,27 @@ export const DeckBuilderView: React.FC<DeckBuilderViewProps> = ({ onBack, onClos
           </div>
 
           {/* Deck Atual */}
-          <div className="bg-slate-800 p-6 rounded-2xl flex flex-col h-full min-h-0">
-            <h2 className="text-xl font-bold mb-4">
-              {isCreatingNew || selectedDeckId ? 'Editando Deck' : 'Selecione um deck'}
-            </h2>
+          <div className="bg-slate-800 p-6 rounded-2xl flex flex-col h-full max-h-[50vh] lg:max-h-none min-h-0">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold">
+                {isCreatingNew || selectedDeckId ? 'Editando Deck' : 'Selecione um deck'}
+              </h2>
+              {(isCreatingNew || selectedDeckId) && (
+                <button
+                  onClick={handleSaveDeck}
+                  disabled={deckCards.length < MIN_DECK_SIZE || deckCards.length > MAX_DECK_SIZE || !deckName.trim()}
+                  className={`
+                    px-4 py-2 rounded-xl font-bold text-sm transition-all
+                    ${deckCards.length >= MIN_DECK_SIZE && deckCards.length <= MAX_DECK_SIZE && deckName.trim()
+                      ? 'bg-green-600 hover:bg-green-500'
+                      : 'bg-slate-700 text-slate-500 cursor-not-allowed'
+                    }
+                  `}
+                >
+                  💾 Salvar
+                </button>
+              )}
+            </div>
             {(isCreatingNew || selectedDeckId) && (
               <div className="flex flex-col flex-1 min-h-0">
                 <input
@@ -224,7 +244,7 @@ export const DeckBuilderView: React.FC<DeckBuilderViewProps> = ({ onBack, onClos
                   value={deckName}
                   onChange={(e) => setDeckName(e.target.value)}
                   placeholder="Nome do deck..."
-                  className="w-full bg-slate-700 px-4 py-3 rounded-xl mb-4 font-bold text-lg"
+                  className="w-full bg-slate-700 px-4 py-1 sm:py-3 rounded-xl mb-4 font-bold text-lg"
                 />
 
                 <div className="mb-4">
@@ -253,7 +273,7 @@ export const DeckBuilderView: React.FC<DeckBuilderViewProps> = ({ onBack, onClos
                 </div>
 
                 {/* Deck Cards */}
-                <div className="bg-slate-900/50 rounded-xl p-4 overflow-y-auto flex-1 mb-4 min-h-0">
+                <div className="bg-slate-900/50 rounded-xl p-4 overflow-y-auto flex-1 min-h-0">
                   {deckCards.length === 0 ? (
                     <div className="text-center text-slate-500 py-8">
                       Adicione cartas ao deck
@@ -270,7 +290,7 @@ export const DeckBuilderView: React.FC<DeckBuilderViewProps> = ({ onBack, onClos
                               const firstIndex = deckCards.indexOf(cardId);
                               if (firstIndex !== -1) handleRemoveCard(firstIndex);
                             }}
-                            className="relative p-2 bg-slate-800 rounded-lg border-2 cursor-pointer hover:border-red-400 transition-all"
+                            className="relative p-2 bg-slate-800 rounded-lg border-2 cursor-pointer hover:border-red-400 transition-all select-none"
                           >
                             <div className="text-2xl text-center">{getTypeIcon(card.type)}</div>
                             <div className="text-xs text-center truncate">{card.name}</div>
@@ -283,26 +303,12 @@ export const DeckBuilderView: React.FC<DeckBuilderViewProps> = ({ onBack, onClos
                     </div>
                   )}
                 </div>
-
-                <button
-                  onClick={handleSaveDeck}
-                  disabled={deckCards.length < MIN_DECK_SIZE || deckCards.length > MAX_DECK_SIZE || !deckName.trim()}
-                  className={`
-                    w-full py-4 rounded-xl font-bold text-lg transition-all
-                    ${deckCards.length >= MIN_DECK_SIZE && deckCards.length <= MAX_DECK_SIZE && deckName.trim()
-                      ? 'bg-green-600 hover:bg-green-500'
-                      : 'bg-slate-700 text-slate-500 cursor-not-allowed'
-                    }
-                  `}
-                >
-                  💾 Salvar Deck
-                </button>
               </div>
             )}
           </div>
 
           {/* Cartas Disponíveis */}
-          <div className="bg-slate-800 p-6 rounded-2xl flex flex-col h-full min-h-0">
+          <div className="bg-slate-800 p-6 rounded-2xl flex flex-col h-full max-h-[50vh] lg:max-h-none min-h-0">
             <h2 className="text-xl font-bold mb-4">Cartas Disponíveis</h2>
 
             {/* Filters */}
