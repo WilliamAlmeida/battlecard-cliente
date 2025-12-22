@@ -925,17 +925,28 @@ export const useGameLogic = () => {
       }
     }
     else if (effect.type === 'REVIVE' && effect.target === 'GRAVEYARD') {
-      if (state.graveyard.length > 0 && state.field.length < 3) {
+      if (state.graveyard.length > 0) {
         const toRevive = state.graveyard[state.graveyard.length - 1];
-        const revivedCard = effect.value === 1 
+        const revivedCard = effect.value === 1
           ? { ...toRevive, hasAttacked: false }
           : { ...toRevive, attack: Math.floor(toRevive.attack / 2), hasAttacked: false };
-        setFn(p => ({
-          ...p,
-          field: [...p.field, revivedCard],
-          graveyard: p.graveyard.slice(0, -1)
-        }));
-        addLog(`${ownerName} reviveu ${toRevive.name}!`, 'effect');
+
+        // If there's space on the field (max 3), place revived on field, otherwise return to hand
+        if (state.field.length < 3) {
+          setFn(p => ({
+            ...p,
+            field: [...p.field, revivedCard],
+            graveyard: p.graveyard.slice(0, -1)
+          }));
+          addLog(`${ownerName} reviveu ${toRevive.name} para o campo!`, 'effect');
+        } else {
+          setFn(p => ({
+            ...p,
+            hand: [...p.hand, revivedCard],
+            graveyard: p.graveyard.slice(0, -1)
+          }));
+          addLog(`${ownerName} não tinha espaço no campo — ${toRevive.name} foi para a mão!`, 'effect');
+        }
       }
     }
   }, [addLog]);
