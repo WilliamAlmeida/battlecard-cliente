@@ -25,9 +25,9 @@ export const AchievementsView: React.FC<AchievementsViewProps> = ({ onClose, onB
           </div>
           <button 
             onClick={handleClose}
-            className="bg-slate-700 px-6 py-3 rounded-xl font-bold hover:bg-slate-600"
+            className="bg-slate-700 px-4 py-2 sm:px-6 sm:py-3 rounded-xl font-bold hover:bg-slate-600"
           >
-            ✕ Fechar
+            ✕ <span className="hidden sm:inline">Fechar</span>
           </button>
         </div>
 
@@ -40,7 +40,7 @@ export const AchievementsView: React.FC<AchievementsViewProps> = ({ onClose, onB
         </div>
 
         {/* Achievements Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {achievements.map(achievement => (
             <div 
               key={achievement.id}
