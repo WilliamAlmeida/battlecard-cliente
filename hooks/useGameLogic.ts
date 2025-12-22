@@ -122,16 +122,20 @@ const applyStatusEffect = (card: Card, status: StatusEffect, duration: number = 
 // Helper to check and activate traps
 const checkAndActivateTraps = (
   trapOwner: Player,
+  opponent: Player,
   condition: TrapCondition,
-  context: { attacker?: Card, defender?: Card, attackerOwner?: 'player' | 'npc' },
+  context: { attacker?: Card, defender?: Card, summoned?: Card, destroyed?: Card, attackerOwner?: 'player' | 'npc' },
   setPlayer: (value: Player | ((prev: Player) => Player)) => void,
   setNpc: (value: Player | ((prev: Player) => Player)) => void
-): { activatedTraps: Card[], damage: number, statusEffects: Array<{target: Card, status: StatusEffect}>, destroyTargets: string[], logs: string[] } => {
+): { activatedTraps: Card[], damageToOpponentPlayer: number, statusEffects: Array<{target: Card, status: StatusEffect}>, destroyTargets: string[], logs: string[], debuffTargets: Array<{targetId: string, value: number}>, negateAttack: boolean, surviveTrap: boolean } => {
   const activatedTraps: Card[] = [];
-  let totalDamage = 0;
+  let totalDamageToOpponentPlayer = 0;
   const logs: string[] = [];
   const statusEffects: Array<{target: Card, status: StatusEffect}> = [];
   const destroyTargets: string[] = [];
+  const debuffTargets: Array<{targetId: string, value: number}> = [];
+  let negateAttack = false;
+  let surviveTrap = false;
 
   trapOwner.trapZone.forEach(trap => {
     if (trap.trapCondition === condition && trap.isSet) {
@@ -141,27 +145,75 @@ const checkAndActivateTraps = (
       if (trap.trapEffect) {
         const effect = trap.trapEffect;
         
-        if (effect.type === 'DAMAGE' && context.attacker) {
-          const damage = effect.value || 500;
-          totalDamage += damage;
-          logs.push(`${trap.name} causa ${damage} de dano em ${context.attacker.name}!`);
+        if (effect.type === 'DAMAGE') {
+          const damage = effect.value !== undefined ? effect.value : 500;
+          
+          // Handle special damage effects
+          if (effect.specialId === 'reflect_damage' && context.attacker && context.defender) {
+            // Mirror Coat: reflect the attacker's attack back
+            const reflectedDamage = context.attacker.attack;
+            totalDamageToOpponentPlayer += reflectedDamage;
+            logs.push(`${trap.name} refletiu ${reflectedDamage} de dano!`);
+          }
+          else if (effect.target === 'SINGLE_ENEMY' && context.attacker) {
+            totalDamageToOpponentPlayer += damage;
+            logs.push(`${trap.name} causa ${damage} de dano em ${context.attacker.name}!`);
+          }
+          else if (effect.target === 'ALL_ENEMIES') {
+            // Damage all opponent's field monsters
+            opponent.field.forEach(card => {
+              if (damage >= card.defense) {
+                destroyTargets.push(card.uniqueId);
+                logs.push(`${trap.name} destruiu ${card.name} com ${damage} de dano!`);
+              } else {
+                logs.push(`${trap.name} causou ${damage} de dano em ${card.name}!`);
+              }
+            });
+          }
         }
-        else if (effect.type === 'STATUS' && effect.statusEffect && context.attacker) {
-          statusEffects.push({ target: context.attacker, status: effect.statusEffect });
-          logs.push(`${trap.name} aplicou ${effect.statusEffect} em ${context.attacker.name}!`);
+        else if (effect.type === 'STATUS' && effect.statusEffect) {
+          if (effect.target === 'SINGLE_ENEMY' && context.attacker) {
+            statusEffects.push({ target: context.attacker, status: effect.statusEffect });
+            logs.push(`${trap.name} aplicou ${effect.statusEffect} em ${context.attacker.name}!`);
+          }
+          else if (effect.target === 'SINGLE_ENEMY' && context.summoned) {
+            statusEffects.push({ target: context.summoned, status: effect.statusEffect });
+            logs.push(`${trap.name} aplicou ${effect.statusEffect} em ${context.summoned.name}!`);
+          }
         }
-        else if (effect.type === 'DESTROY' && context.attacker) {
-          destroyTargets.push(context.attacker.uniqueId);
-          logs.push(`${trap.name} destruiu ${context.attacker.name}!`);
+        else if (effect.type === 'DESTROY') {
+          if (effect.target === 'SINGLE_ENEMY' && context.attacker) {
+            destroyTargets.push(context.attacker.uniqueId);
+            logs.push(`${trap.name} destruiu ${context.attacker.name}!`);
+          }
         }
-        else if (effect.type === 'DEBUFF' && effect.value && context.attacker) {
-          logs.push(`${trap.name} reduziu ${Math.abs(effect.value)} ATK de ${context.attacker.name}!`);
+        else if (effect.type === 'DEBUFF' && effect.value) {
+          if (effect.target === 'SINGLE_ENEMY' && context.attacker) {
+            debuffTargets.push({ targetId: context.attacker.uniqueId, value: effect.value });
+            logs.push(`${trap.name} reduziu ${Math.abs(effect.value)} ATK de ${context.attacker.name}!`);
+          }
+          else if (effect.target === 'ALL_ENEMIES') {
+            opponent.field.forEach(card => {
+              debuffTargets.push({ targetId: card.uniqueId, value: effect.value! });
+            });
+            logs.push(`${trap.name} reduziu ${Math.abs(effect.value)} ATK de todos os inimigos!`);
+          }
+        }
+        else if (effect.type === 'SPECIAL') {
+          if (effect.specialId === 'negate_attack') {
+            negateAttack = true;
+            logs.push(`${trap.name} negou o ataque!`);
+          }
+          else if (effect.specialId === 'survive_1hp') {
+            surviveTrap = true;
+            logs.push(`${trap.name} permitiu sobrevivência com 1 HP!`);
+          }
         }
       }
     }
   });
 
-  return { activatedTraps, damage: totalDamage, statusEffects, destroyTargets, logs };
+  return { activatedTraps, damageToOpponentPlayer: totalDamageToOpponentPlayer, statusEffects, destroyTargets, logs, debuffTargets, negateAttack, surviveTrap };
 };
 
 export const useGameLogic = () => {
@@ -364,11 +416,14 @@ export const useGameLogic = () => {
 
     await new Promise(r => setTimeout(r, 600));
 
-    // Check for ON_ATTACK traps from defender
+    // Check for ON_ATTACK or ON_DIRECT_ATTACK traps from defender
+    const trapCondition = targetId ? TrapCondition.ON_ATTACK : TrapCondition.ON_DIRECT_ATTACK;
+    const defender = targetId ? defenderState.field.find(c => c.uniqueId === targetId) : undefined;
     const trapResult = checkAndActivateTraps(
       defenderState,
-      TrapCondition.ON_ATTACK,
-      { attacker, attackerOwner: ownerId },
+      attackerState,
+      trapCondition,
+      { attacker, defender, attackerOwner: ownerId },
       setPlayer,
       setNpc
     );
@@ -386,16 +441,38 @@ export const useGameLogic = () => {
       }));
     }
 
+    // Handle negate attack trap
+    if (trapResult.negateAttack) {
+      addLog('Ataque negado pela armadilha!', 'trap');
+      setAttackingCardId(null);
+      setDamagedCardId(null);
+      setFloatingDamage(null);
+      setIsAnimating(false);
+      return;
+    }
+
     // Apply trap damage to attacker's owner
-    if (trapResult.damage > 0) {
-      setFloatingDamage({ id: generateUniqueId(), value: trapResult.damage, targetId: isPlayer ? 'player-hp' : 'npc-hp' });
+    if (trapResult.damageToOpponentPlayer > 0) {
+      setFloatingDamage({ id: generateUniqueId(), value: trapResult.damageToOpponentPlayer, targetId: isPlayer ? 'player-hp' : 'npc-hp' });
       const fn = isPlayer ? setPlayer : setNpc;
       fn(p => {
-        const newHp = Math.max(0, p.hp - trapResult.damage);
+        const newHp = Math.max(0, p.hp - trapResult.damageToOpponentPlayer);
         if (newHp <= 0) { finishGame(isPlayer ? 'npc' : 'player', 'trap_damage'); }
         return { ...p, hp: newHp };
       });
       await new Promise(r => setTimeout(r, 400));
+    }
+
+    // Apply debuffs from traps
+    if (trapResult.debuffTargets.length > 0) {
+      const fn = isPlayer ? setPlayer : setNpc;
+      fn(p => ({
+        ...p,
+        field: p.field.map(c => {
+          const debuff = trapResult.debuffTargets.find(d => d.targetId === c.uniqueId);
+          return debuff ? { ...c, attack: Math.max(0, c.attack + debuff.value) } : c;
+        })
+      }));
     }
 
     // Apply status effects from traps
@@ -477,6 +554,39 @@ export const useGameLogic = () => {
             // Track destruction for player
             if (isPlayer) {
               setCardsDestroyed(prev => prev + 1);
+            }
+
+            // Check for ON_DESTROY traps from defender's owner
+            const destroyTrapResult = checkAndActivateTraps(
+              defenderState,
+              attackerState,
+              TrapCondition.ON_DESTROY,
+              { destroyed: defender, attacker },
+              setPlayer,
+              setNpc
+            );
+
+            if (destroyTrapResult.activatedTraps.length > 0) {
+              destroyTrapResult.logs.forEach(log => addLog(log, 'trap'));
+              
+              // Remove activated traps
+              const fn = isPlayer ? setNpc : setPlayer;
+              fn(prev => ({
+                ...prev,
+                trapZone: prev.trapZone.filter(t => !destroyTrapResult.activatedTraps.some(at => at.uniqueId === t.uniqueId)),
+                graveyard: [...prev.graveyard, ...destroyTrapResult.activatedTraps]
+              }));
+
+              // Apply destruction to attacker if triggered (e.g., Destiny Bond)
+              if (destroyTrapResult.destroyTargets.includes(attacker.uniqueId)) {
+                const attackerFn = isPlayer ? setPlayer : setNpc;
+                attackerFn(p => ({
+                  ...p,
+                  field: p.field.filter(c => c.uniqueId !== attacker.uniqueId),
+                  graveyard: [...p.graveyard, attacker]
+                }));
+                addLog(`${attacker.name} também foi destruído pela armadilha!`, 'trap');
+              }
             }
           }
           if (!result.attackerSurvived) {
@@ -577,6 +687,7 @@ export const useGameLogic = () => {
   const summonCard = useCallback((owner: 'player' | 'npc', cardId: string, sacrifices: string[]) => {
     const setFn = owner === 'player' ? setPlayer : setNpc;
     const state = owner === 'player' ? gameStateRef.current.player : gameStateRef.current.npc;
+    const opponent = owner === 'player' ? gameStateRef.current.npc : gameStateRef.current.player;
     const card = state.hand.find(c => c.uniqueId === cardId);
     
     if (!card) return;
@@ -595,6 +706,53 @@ export const useGameLogic = () => {
     if (card.ability?.trigger === AbilityTrigger.ON_SUMMON) {
       addLog(`${card.name} ativou ${card.ability.name}!`, 'effect');
       soundService.playBuff();
+    }
+
+    // Check for ON_SUMMON traps from opponent
+    const trapResult = checkAndActivateTraps(
+      opponent,
+      state,
+      TrapCondition.ON_SUMMON,
+      { summoned: card },
+      setPlayer,
+      setNpc
+    );
+
+    if (trapResult.activatedTraps.length > 0) {
+      trapResult.logs.forEach(log => addLog(log, 'trap'));
+      
+      // Remove activated traps
+      const opponentSetFn = owner === 'player' ? setNpc : setPlayer;
+      opponentSetFn(prev => ({
+        ...prev,
+        trapZone: prev.trapZone.filter(t => !trapResult.activatedTraps.some(at => at.uniqueId === t.uniqueId)),
+        graveyard: [...prev.graveyard, ...trapResult.activatedTraps]
+      }));
+
+      // Apply status effects from traps to summoned card
+      if (trapResult.statusEffects.length > 0) {
+        setFn(p => ({
+          ...p,
+          field: p.field.map(c => {
+            if (c.uniqueId === card.uniqueId) {
+              const statusTarget = trapResult.statusEffects.find(se => se.target.uniqueId === c.uniqueId);
+              return statusTarget ? applyStatusEffect(c, statusTarget.status, 3) : c;
+            }
+            return c;
+          })
+        }));
+      }
+
+      // Apply debuffs
+      if (trapResult.debuffTargets.length > 0) {
+        setFn(p => ({
+          ...p,
+          field: p.field.map(c => {
+            const debuff = trapResult.debuffTargets.find(d => d.targetId === c.uniqueId);
+            return debuff ? { ...c, attack: Math.max(0, c.attack + debuff.value) } : c;
+          })
+        }));
+      }
     }
   }, [addLog]);
 
