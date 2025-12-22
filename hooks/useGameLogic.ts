@@ -209,6 +209,15 @@ export const useGameLogic = () => {
     }
   }, []);
 
+  // Ensure game end is applied exactly once to avoid race conditions
+  const finishGame = useCallback((who: 'player' | 'npc') => {
+    if (gameStateRef.current.gameOver) return;
+    // update ref so concurrent callers see the game is over
+    gameStateRef.current = { ...gameStateRef.current, gameOver: true };
+    setWinner(who);
+    setGameOver(true);
+  }, []);
+
   // Process status effects at start of turn
   const processFieldStatusEffects = useCallback(() => {
     const isPlayer = gameStateRef.current.currentTurnPlayer === 'player';
@@ -241,8 +250,7 @@ export const useGameLogic = () => {
       }));
       
       if (current.hp - totalStatusDamage <= 0) {
-        setWinner(isPlayer ? 'npc' : 'player');
-        setGameOver(true);
+        finishGame(isPlayer ? 'npc' : 'player');
       }
     } else {
       const fn = isPlayer ? setPlayer : setNpc;
@@ -258,8 +266,7 @@ export const useGameLogic = () => {
     processFieldStatusEffects();
     
     if (cur.deck.length === 0) { 
-      setWinner(isPlayer ? 'npc' : 'player'); 
-      setGameOver(true); 
+      finishGame(isPlayer ? 'npc' : 'player'); 
       return; 
     }
     
@@ -380,7 +387,7 @@ export const useGameLogic = () => {
       const fn = isPlayer ? setPlayer : setNpc;
       fn(p => {
         const newHp = Math.max(0, p.hp - trapResult.damage);
-        if (newHp <= 0) { setWinner(isPlayer ? 'npc' : 'player'); setGameOver(true); }
+        if (newHp <= 0) { finishGame(isPlayer ? 'npc' : 'player'); }
         return { ...p, hp: newHp };
       });
       await new Promise(r => setTimeout(r, 400));
@@ -422,7 +429,7 @@ export const useGameLogic = () => {
       const fn = isPlayer ? setNpc : setPlayer;
       fn(prev => {
         const newHp = Math.max(0, prev.hp - damage);
-        if (newHp <= 0) { setWinner(isPlayer ? 'player' : 'npc'); setGameOver(true); }
+        if (newHp <= 0) { finishGame(isPlayer ? 'player' : 'npc'); }
         return { ...prev, hp: newHp };
       });
     } else {
@@ -436,7 +443,7 @@ export const useGameLogic = () => {
           setFloatingDamage({ id: generateUniqueId(), value: result.damageToDefenderOwner, targetId: isPlayer ? 'npc-hp' : 'player-hp' });
           const fn = isPlayer ? setNpc : setPlayer;
           fn(p => ({ ...p, hp: Math.max(0, p.hp - result.damageToDefenderOwner) }));
-          if (defenderState.hp - result.damageToDefenderOwner <= 0) { setWinner(isPlayer ? 'player' : 'npc'); setGameOver(true); }
+          if (defenderState.hp - result.damageToDefenderOwner <= 0) { finishGame(isPlayer ? 'player' : 'npc'); }
           addLog(`Dono de ${defender.name} sofreu ${result.damageToDefenderOwner} de dano (DEF ${defender.defense} reduzido).`, 'combat');
         }
 
@@ -444,7 +451,7 @@ export const useGameLogic = () => {
           setFloatingDamage({ id: generateUniqueId(), value: result.damageToAttackerOwner, targetId: isPlayer ? 'player-hp' : 'npc-hp' });
           const fn = isPlayer ? setPlayer : setNpc;
           fn(p => ({ ...p, hp: Math.max(0, p.hp - result.damageToAttackerOwner) }));
-          if (attackerState.hp - result.damageToAttackerOwner <= 0) { setWinner(isPlayer ? 'npc' : 'player'); setGameOver(true); }
+          if (attackerState.hp - result.damageToAttackerOwner <= 0) { finishGame(isPlayer ? 'npc' : 'player'); }
           addLog(`Dono de ${attacker.name} sofreu ${result.damageToAttackerOwner} de dano (DEF ${attacker.defense} reduzido).`, 'combat');
         }
 
