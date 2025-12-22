@@ -437,7 +437,7 @@ export const useGameLogic = () => {
       fn(prev => ({
         ...prev,
         trapZone: prev.trapZone.filter(t => !trapResult.activatedTraps.some(at => at.uniqueId === t.uniqueId)),
-        graveyard: [...prev.graveyard, ...trapResult.activatedTraps]
+        graveyard: [...prev.graveyard, ...trapResult.activatedTraps.map(t => ({ ...t, destroyedAt: Date.now() }))]
       }));
     }
 
@@ -493,7 +493,7 @@ export const useGameLogic = () => {
       fn(p => ({
         ...p,
         field: p.field.filter(c => c.uniqueId !== attacker.uniqueId),
-        graveyard: [...p.graveyard, attacker]
+        graveyard: [...p.graveyard, { ...attacker, destroyedAt: Date.now() }]
       }));
       addLog(`${attacker.name} foi destruído pela armadilha!`, 'trap');
       setAttackingCardId(null);
@@ -548,7 +548,7 @@ export const useGameLogic = () => {
         setTimeout(() => {
           if (!result.defenderSurvived) {
             const fn = isPlayer ? setNpc : setPlayer;
-            fn(p => ({ ...p, field: p.field.filter(c => c.uniqueId !== targetId), graveyard: [...p.graveyard, defender] }));
+            fn(p => ({ ...p, field: p.field.filter(c => c.uniqueId !== targetId), graveyard: [...p.graveyard, { ...defender, destroyedAt: Date.now() }] }));
             addLog(`${defender.name} foi nocauteado!`, 'info');
             soundService.playDestroy();
             
@@ -575,7 +575,7 @@ export const useGameLogic = () => {
               fn(prev => ({
                 ...prev,
                 trapZone: prev.trapZone.filter(t => !destroyTrapResult.activatedTraps.some(at => at.uniqueId === t.uniqueId)),
-                graveyard: [...prev.graveyard, ...destroyTrapResult.activatedTraps]
+                graveyard: [...prev.graveyard, ...destroyTrapResult.activatedTraps.map(t => ({ ...t, destroyedAt: Date.now() }))]
               }));
 
               // Apply destruction to attacker if triggered (e.g., Destiny Bond)
@@ -584,7 +584,7 @@ export const useGameLogic = () => {
                 attackerFn(p => ({
                   ...p,
                   field: p.field.filter(c => c.uniqueId !== attacker.uniqueId),
-                  graveyard: [...p.graveyard, attacker]
+                  graveyard: [...p.graveyard, { ...attacker, destroyedAt: Date.now() }]
                 }));
                 addLog(`${attacker.name} também foi destruído pela armadilha!`, 'trap');
               }
@@ -604,7 +604,7 @@ export const useGameLogic = () => {
           }
           if (!result.attackerSurvived) {
             const fn = isPlayer ? setPlayer : setNpc;
-            fn(p => ({ ...p, field: p.field.filter(c => c.uniqueId !== attackerId), graveyard: [...p.graveyard, attacker] }));
+            fn(p => ({ ...p, field: p.field.filter(c => c.uniqueId !== attackerId), graveyard: [...p.graveyard, { ...attacker, destroyedAt: Date.now() }] }));
             addLog(`${attacker.name} foi nocauteado no contra-ataque!`, 'info');
             soundService.playDestroy();
           }
@@ -709,7 +709,7 @@ export const useGameLogic = () => {
       ...p,
       hand: p.hand.filter(c => c.uniqueId !== cardId && !sacrifices.includes(c.uniqueId)),
       field: [...p.field.filter(c => !sacrifices.includes(c.uniqueId)), { ...card, hasAttacked: false }],
-      graveyard: [...p.graveyard, ...p.field.filter(c => sacrifices.includes(c.uniqueId))]
+      graveyard: [...p.graveyard, ...p.field.filter(c => sacrifices.includes(c.uniqueId)).map(c => ({ ...c, destroyedAt: Date.now() }))]
     }));
     
     soundService.playSummon();
@@ -739,7 +739,7 @@ export const useGameLogic = () => {
       opponentSetFn(prev => ({
         ...prev,
         trapZone: prev.trapZone.filter(t => !trapResult.activatedTraps.some(at => at.uniqueId === t.uniqueId)),
-        graveyard: [...prev.graveyard, ...trapResult.activatedTraps]
+        graveyard: [...prev.graveyard, ...trapResult.activatedTraps.map(t => ({ ...t, destroyedAt: Date.now() }))]
       }));
 
       // Apply status effects from traps to summoned card
@@ -809,7 +809,7 @@ export const useGameLogic = () => {
     setFn(p => ({
       ...p,
       hand: p.hand.filter(c => c.uniqueId !== cardId),
-      graveyard: [...p.graveyard, card]
+      graveyard: [...p.graveyard, { ...card, destroyedAt: Date.now() }]
     }));
     
     addLog(`${ownerName} usou ${card.name}!`, 'spell');
@@ -840,7 +840,7 @@ export const useGameLogic = () => {
             opponentSetFn(p => ({
               ...p,
               field: p.field.filter(c => c.uniqueId !== targetId),
-              graveyard: [...p.graveyard, target]
+              graveyard: [...p.graveyard, { ...target, destroyedAt: Date.now() }]
             }));
             addLog(`${card.name} destruiu ${target.name}!`, 'combat');
           } else {
@@ -855,7 +855,7 @@ export const useGameLogic = () => {
           return {
             ...p,
             field: survived,
-            graveyard: [...p.graveyard, ...destroyed]
+            graveyard: [...p.graveyard, ...destroyed.map(c => ({ ...c, destroyedAt: Date.now() }))]
           };
         });
         addLog(`${card.name} causou ${damage} de dano em todos os inimigos!`, 'combat');
@@ -909,7 +909,7 @@ export const useGameLogic = () => {
         opponentSetFn(p => ({
           ...p,
           field: p.field.filter(c => c.uniqueId !== targetId),
-          graveyard: [...p.graveyard, target]
+          graveyard: [...p.graveyard, { ...target, destroyedAt: Date.now() }]
         }));
         addLog(`${card.name} destruiu ${target.name}!`, 'combat');
       }

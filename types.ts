@@ -118,6 +118,7 @@ export interface Card {
   trapCondition?: TrapCondition;
   trapEffect?: SpellEffect;
   isSet?: boolean;
+  destroyedAt?: number;
 }
 
 export interface Player {

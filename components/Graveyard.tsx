@@ -23,16 +23,18 @@ export const Graveyard: React.FC<GraveyardProps> = ({ playerGrave, npcGrave, isO
     setInternalOpen(v => !v);
   };
 
-  // Build combined chronological list. Arrays in game state append as events happen,
-  // so concat in the order we want to show (oldest -> newest).
-  const combined = [
-    ...playerGrave.map(c => ({ card: c, owner: 'Você' as const })),
-    ...npcGrave.map(c => ({ card: c, owner: 'Oponente' as const }))
+  // Build combined list. If cards include a timestamp (e.g. `destroyedAt`), use it to
+  // produce a true chronological interleaving between owners. Otherwise fall back
+  // to the current concatenation behavior (player then npc).
+  const combinedWithTs = [
+    ...playerGrave.map(c => ({ card: c, owner: 'Você' as const, ts: (c as any).destroyedAt ?? 0 })),
+    ...npcGrave.map(c => ({ card: c, owner: 'Oponente' as const, ts: (c as any).destroyedAt ?? 0 }))
   ];
 
-  // If we want chronological interleaving between owners, the game currently stores each owner
-  // separately; this simple implementation lists player then npc entries. If true interleaving
-  // is required we would need timestamps on cards when moved to graveyard.
+  // If any timestamp is present (>0), sort by timestamp (oldest -> newest). Otherwise
+  // keep the concatenated order.
+  const hasTimestamps = combinedWithTs.some(e => !!e.ts && e.ts > 0);
+  const combined = hasTimestamps ? combinedWithTs.sort((a, b) => a.ts - b.ts) : combinedWithTs;
 
   const entriesToShow = (() => {
     if (restrictToMine) return combined.filter(e => e.owner === 'Você');
