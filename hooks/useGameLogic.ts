@@ -210,13 +210,17 @@ export const useGameLogic = () => {
   }, []);
 
   // Ensure game end is applied exactly once to avoid race conditions
-  const finishGame = useCallback((who: 'player' | 'npc') => {
+  const finishGame = useCallback((who: 'player' | 'npc', reason?: string) => {
     if (gameStateRef.current.gameOver) return;
     // update ref so concurrent callers see the game is over
     gameStateRef.current = { ...gameStateRef.current, gameOver: true };
     setWinner(who);
     setGameOver(true);
-  }, []);
+    const reasonText = reason ? ` (${reason})` : '';
+    addLog(`${who === 'player' ? 'Jogador' : 'CPU'} venceu o jogo${reasonText}`, 'info');
+    // also helpful in console for debugging simultaneous updates
+    console.debug('finishGame called ->', { winner: who, reason });
+  }, [addLog]);
 
   // Process status effects at start of turn
   const processFieldStatusEffects = useCallback(() => {
@@ -250,8 +254,8 @@ export const useGameLogic = () => {
       }));
       
       if (current.hp - totalStatusDamage <= 0) {
-        finishGame(isPlayer ? 'npc' : 'player');
-      }
+          finishGame(isPlayer ? 'npc' : 'player', 'status_damage');
+        }
     } else {
       const fn = isPlayer ? setPlayer : setNpc;
       fn(p => ({ ...p, field: processedField }));
@@ -266,7 +270,7 @@ export const useGameLogic = () => {
     processFieldStatusEffects();
     
     if (cur.deck.length === 0) { 
-      finishGame(isPlayer ? 'npc' : 'player'); 
+      finishGame(isPlayer ? 'npc' : 'player', 'deck_out'); 
       return; 
     }
     
@@ -387,7 +391,7 @@ export const useGameLogic = () => {
       const fn = isPlayer ? setPlayer : setNpc;
       fn(p => {
         const newHp = Math.max(0, p.hp - trapResult.damage);
-        if (newHp <= 0) { finishGame(isPlayer ? 'npc' : 'player'); }
+        if (newHp <= 0) { finishGame(isPlayer ? 'npc' : 'player', 'trap_damage'); }
         return { ...p, hp: newHp };
       });
       await new Promise(r => setTimeout(r, 400));
@@ -429,7 +433,7 @@ export const useGameLogic = () => {
       const fn = isPlayer ? setNpc : setPlayer;
       fn(prev => {
         const newHp = Math.max(0, prev.hp - damage);
-        if (newHp <= 0) { finishGame(isPlayer ? 'player' : 'npc'); }
+        if (newHp <= 0) { finishGame(isPlayer ? 'player' : 'npc', 'direct_attack'); }
         return { ...prev, hp: newHp };
       });
     } else {
@@ -443,7 +447,7 @@ export const useGameLogic = () => {
           setFloatingDamage({ id: generateUniqueId(), value: result.damageToDefenderOwner, targetId: isPlayer ? 'npc-hp' : 'player-hp' });
           const fn = isPlayer ? setNpc : setPlayer;
           fn(p => ({ ...p, hp: Math.max(0, p.hp - result.damageToDefenderOwner) }));
-          if (defenderState.hp - result.damageToDefenderOwner <= 0) { finishGame(isPlayer ? 'player' : 'npc'); }
+          if (defenderState.hp - result.damageToDefenderOwner <= 0) { finishGame(isPlayer ? 'player' : 'npc', 'combat_defender_dead'); }
           addLog(`Dono de ${defender.name} sofreu ${result.damageToDefenderOwner} de dano (DEF ${defender.defense} reduzido).`, 'combat');
         }
 
@@ -451,7 +455,7 @@ export const useGameLogic = () => {
           setFloatingDamage({ id: generateUniqueId(), value: result.damageToAttackerOwner, targetId: isPlayer ? 'player-hp' : 'npc-hp' });
           const fn = isPlayer ? setPlayer : setNpc;
           fn(p => ({ ...p, hp: Math.max(0, p.hp - result.damageToAttackerOwner) }));
-          if (attackerState.hp - result.damageToAttackerOwner <= 0) { finishGame(isPlayer ? 'npc' : 'player'); }
+          if (attackerState.hp - result.damageToAttackerOwner <= 0) { finishGame(isPlayer ? 'npc' : 'player', 'combat_attacker_dead'); }
           addLog(`Dono de ${attacker.name} sofreu ${result.damageToAttackerOwner} de dano (DEF ${attacker.defense} reduzido).`, 'combat');
         }
 
