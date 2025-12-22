@@ -142,6 +142,11 @@ export default function App() {
             setSelectedCardId(null);
             return;
           }
+          // Se clicou em aliado mas o spell é para inimigo, informar
+          if (effect?.target === 'SINGLE_ENEMY') {
+            addLog('Este feitiço só pode ser usado em inimigos!');
+            return;
+          }
         }
       }
 
@@ -219,9 +224,15 @@ export default function App() {
     if (attackMode && selectedCardId && !isBusy) {
       const selectedCard = player.hand.find(c => c.uniqueId === selectedCardId) || player.field.find(c => c.uniqueId === selectedCardId);
       if (selectedCard?.cardType === 'SPELL') {
-        useSpell('player', selectedCardId, target.uniqueId);
-        setAttackMode(false);
-        setSelectedCardId(null);
+        const effect = selectedCard.spellEffect;
+        // Validar que o spell aceita inimigos como alvo
+        if (effect?.target === 'SINGLE_ENEMY') {
+          useSpell('player', selectedCardId, target.uniqueId);
+          setAttackMode(false);
+          setSelectedCardId(null);
+        } else {
+          addLog('Este feitiço não pode ser usado em inimigos!');
+        }
       } else {
         executeAttack(selectedCardId, target.uniqueId, 'player');
         setAttackMode(false);

@@ -647,8 +647,18 @@ export const useGameLogic = () => {
     // Apply effect
     if (effect.type === 'HEAL') {
       const healAmount = effect.value || 1000;
-      setFn(p => ({ ...p, hp: Math.min(8000, p.hp + healAmount) }));
-      addLog(`${ownerName} recuperou ${healAmount} HP!`, 'effect');
+      // Validar target: OWNER/SELF cura o dono. SINGLE_ALLY agora cura o dono (monstros não têm HP).
+      if (effect.target === 'OWNER' || effect.target === 'SELF' || !effect.target) {
+        setFn(p => ({ ...p, hp: Math.min(8000, p.hp + healAmount) }));
+        addLog(`${ownerName} recuperou ${healAmount} HP!`, 'effect');
+      } else if (effect.target === 'SINGLE_ALLY' && targetId) {
+        // Monsters don't have HP — heal the owner instead, but mention the targeted ally in the log
+        const target = state.field.find(c => c.uniqueId === targetId);
+        if (target) {
+          setFn(p => ({ ...p, hp: Math.min(8000, p.hp + healAmount) }));
+          addLog(`${ownerName} recuperou ${healAmount} HP (alvo: ${target.name})!`, 'effect');
+        }
+      }
     }
     else if (effect.type === 'DAMAGE') {
       const damage = effect.value || 500;
@@ -680,18 +690,29 @@ export const useGameLogic = () => {
         addLog(`${card.name} causou ${damage} de dano em todos os inimigos!`, 'combat');
       }
       else if (effect.target === 'OWNER') {
+        // OWNER = dano direto ao oponente (HP do oponente)
         opponentSetFn(p => ({ ...p, hp: Math.max(0, p.hp - damage) }));
-        addLog(`${card.name} causou ${damage} de dano direto!`, 'combat');
+        addLog(`${card.name} causou ${damage} de dano direto ao oponente!`, 'combat');
       }
     }
-    else if (effect.type === 'BUFF' && targetId) {
+    else if (effect.type === 'BUFF') {
       const buffAmount = effect.value || 500;
-      setFn(p => ({
-        ...p,
-        field: p.field.map(c => c.uniqueId === targetId ? { ...c, attack: c.attack + buffAmount } : c)
-      }));
-      const target = state.field.find(c => c.uniqueId === targetId);
-      if (target) addLog(`${target.name} ganhou +${buffAmount} ATK!`, 'effect');
+      // Validar target: SINGLE_ALLY precisa de targetId, OWNER/SELF aplica ao próprio dono
+      if ((effect.target === 'SINGLE_ALLY' || effect.target === 'SELF') && targetId) {
+        const target = state.field.find(c => c.uniqueId === targetId);
+        if (target) {
+          setFn(p => ({
+            ...p,
+            field: p.field.map(c => c.uniqueId === targetId ? { ...c, attack: c.attack + buffAmount } : c)
+          }));
+          addLog(`${target.name} ganhou +${buffAmount} ATK!`, 'effect');
+        } else {
+          addLog(`Alvo inválido para ${card.name}!`, 'effect');
+        }
+      } else if (effect.target === 'OWNER') {
+        // Buff no owner (não implementado - poderia dar buff global)
+        addLog(`${card.name} tentou buffar o dono, mas não há implementação!`, 'effect');
+      }
     }
     else if (effect.type === 'DRAW') {
       const drawCount = effect.value || 2;
