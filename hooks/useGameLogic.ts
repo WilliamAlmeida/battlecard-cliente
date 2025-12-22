@@ -516,6 +516,7 @@ export const useGameLogic = () => {
       });
     } else {
       const defender = defenderState.field.find(c => c.uniqueId === targetId);
+      let defenderWouldDie: boolean | undefined;
       if (defender) {
         setDamagedCardId(targetId);
         const result = GameRules.resolveCombat(attacker, defender);
@@ -524,8 +525,8 @@ export const useGameLogic = () => {
         if (result.damageToDefenderOwner > 0) {
           setFloatingDamage({ id: generateUniqueId(), value: result.damageToDefenderOwner, targetId: isPlayer ? 'npc-hp' : 'player-hp' });
           const fn = isPlayer ? setNpc : setPlayer;
+          defenderWouldDie = (defenderState.hp - result.damageToDefenderOwner) <= 0;
           fn(p => ({ ...p, hp: Math.max(0, p.hp - result.damageToDefenderOwner) }));
-          if (defenderState.hp - result.damageToDefenderOwner <= 0) { finishGame(isPlayer ? 'player' : 'npc', 'combat_defender_dead'); }
           addLog(`Dono de ${defender.name} sofreu ${result.damageToDefenderOwner} de dano (DEF ${defender.defense} reduzido).`, 'combat');
         }
 
@@ -586,6 +587,18 @@ export const useGameLogic = () => {
                   graveyard: [...p.graveyard, attacker]
                 }));
                 addLog(`${attacker.name} também foi destruído pela armadilha!`, 'trap');
+              }
+
+              // Handle survive_1hp special: if trap triggered, ensure the owner survives with 1 HP
+              if (destroyTrapResult.surviveTrap) {
+                const ownerSetFn = isPlayer ? setNpc : setPlayer;
+                ownerSetFn(p => ({ ...p, hp: 1 }));
+                addLog(`${defender.name} foi salvo pela armadilha e o dono permaneceu com 1 HP!`, 'trap');
+              } else {
+                // If the defender's owner would have died from the damage earlier, finish the game now
+                if (typeof defenderWouldDie !== 'undefined' && defenderWouldDie) {
+                  finishGame(isPlayer ? 'player' : 'npc', 'combat_defender_dead');
+                }
               }
             }
           }
