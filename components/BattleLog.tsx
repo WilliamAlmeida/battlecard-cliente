@@ -18,7 +18,7 @@ export const BattleLog: React.FC<BattleLogProps> = ({ logs, isOpen: externalOpen
   };
 
   return (
-    <div className={`fixed right-0 top-48 z-50 transition-all duration-300 ${isOpen ? 'translate-x-0' : 'translate-x-[calc(100%-56px)]'} ${isOpen ? '' : 'pointer-events-none'}`}>
+    <div className={`fixed right-0 top-[150px] z-[32] transition-all duration-300 ${isOpen ? 'translate-x-0' : 'translate-x-[calc(100%-56px)]'} ${isOpen ? '' : 'pointer-events-none'}`}>
       <div className="flex items-start">
         {/* Toggle Button */}
         <button 
