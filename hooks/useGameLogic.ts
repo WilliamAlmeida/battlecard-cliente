@@ -119,6 +119,169 @@ const applyStatusEffect = (card: Card, status: StatusEffect, duration: number = 
   return newCard;
 };
 
+// Process ability effects
+type AbilityProcessResult = {
+  logs: string[];
+  drawCards?: number;
+  healOwner?: number;
+  statusToApply?: { target: Card, status: StatusEffect }[];
+  reviveCard?: Card;
+};
+
+const processAbility = (
+  card: Card,
+  trigger: AbilityTrigger,
+  context: {
+    owner: Player,
+    opponent: Player,
+    attacker?: Card,
+    defender?: Card,
+    destroyed?: boolean
+  }
+): AbilityProcessResult | null => {
+  if (!card.ability || card.ability.trigger !== trigger) return null;
+
+  const result: AbilityProcessResult = { logs: [] };
+  const ability = card.ability;
+  const effect = ability.effect;
+
+  result.logs.push(`💫 ${card.name} ativou ${ability.name}!`);
+
+  // ON_SUMMON effects
+  if (trigger === AbilityTrigger.ON_SUMMON) {
+    if (effect.type === 'DRAW') {
+      result.drawCards = effect.value || 1;
+      result.logs.push(`Comprou ${result.drawCards} carta(s)!`);
+    }
+    else if (effect.type === 'STATUS' && effect.statusEffect && effect.target === 'ALL_ENEMIES') {
+      const targets = context.opponent.field.map(c => ({ target: c, status: effect.statusEffect! }));
+      result.statusToApply = targets;
+      targets.forEach(t => result.logs.push(`${t.target.name} foi afetado por ${effect.statusEffect}!`));
+    }
+  }
+
+  // ON_ATTACK effects
+  if (trigger === AbilityTrigger.ON_ATTACK && context.defender) {
+    if (effect.type === 'STATUS' && effect.statusEffect) {
+      if (Math.random() < 0.3) {
+        result.statusToApply = [{ target: context.defender, status: effect.statusEffect }];
+        result.logs.push(`${context.defender.name} foi afetado por ${effect.statusEffect}!`);
+      }
+    }
+    else if (effect.type === 'DRAW' && context.destroyed) {
+      // pickup ability: draw card when destroying enemy
+      if (Math.random() < 0.5) {
+        result.drawCards = 1;
+        result.logs.push(`Comprou 1 carta ao destruir o inimigo!`);
+      }
+    }
+  }
+
+  // ON_DAMAGE effects (quando a carta recebe dano)
+  if (trigger === AbilityTrigger.ON_DAMAGE && context.attacker) {
+    if (effect.type === 'STATUS' && effect.statusEffect) {
+      if (Math.random() < 0.3) {
+        result.statusToApply = [{ target: context.attacker, status: effect.statusEffect }];
+        result.logs.push(`${context.attacker.name} foi afetado por ${effect.statusEffect} ao atacar ${card.name}!`);
+      }
+    }
+    else if (effect.type === 'STATUS' && !effect.statusEffect) {
+      // synchronize: copy status to attacker
+      if (card.statusEffects && card.statusEffects.length > 0) {
+        const statusToCopy = card.statusEffects[0];
+        result.statusToApply = [{ target: context.attacker, status: statusToCopy }];
+        result.logs.push(`${context.attacker.name} foi afetado por ${statusToCopy} (Sincronizar)!`);
+      }
+    }
+  }
+
+  // ON_DESTROY effects
+  if (trigger === AbilityTrigger.ON_DESTROY) {
+    if (effect.type === 'HEAL') {
+      result.healOwner = effect.value || 500;
+      result.logs.push(`Dono recuperou ${result.healOwner} HP!`);
+    }
+    else if (effect.type === 'REVIVE') {
+      if (Math.random() < 0.25) {
+        result.reviveCard = { ...card, attack: Math.floor(card.attack / 2), defense: Math.floor(card.defense / 2), hasAttacked: true };
+        result.logs.push(`${card.name} renasceu com metade do ATK/DEF!`);
+      }
+    }
+  }
+
+  // ON_TURN_END effects
+  if (trigger === AbilityTrigger.ON_TURN_END) {
+    if (effect.type === 'HEAL') {
+      result.healOwner = effect.value || 200;
+      result.logs.push(`Dono recuperou ${result.healOwner} HP!`);
+    }
+  }
+
+  return result;
+};
+
+// Calculate passive ability bonuses
+const calculatePassiveStats = (card: Card, owner: Player, opponent: Player): { attack: number, defense: number, evasion?: number } => {
+  let attackBonus = 0;
+  let defenseBonus = 0;
+  let evasion = 0;
+
+  if (!card.ability || card.ability.trigger !== AbilityTrigger.PASSIVE) {
+    return { attack: attackBonus, defense: defenseBonus };
+  }
+
+  const ability = card.ability;
+  const effect = ability.effect;
+
+  // blaze, torrent, overgrow: +500 ATK when HP < 50%
+  if ((ability.id === 'blaze' || ability.id === 'torrent' || ability.id === 'overgrow') && owner.hp < 4000) {
+    attackBonus += 500;
+  }
+
+  // guts: +50% ATK when affected by status
+  if (ability.id === 'guts' && card.statusEffects && card.statusEffects.length > 0) {
+    attackBonus += Math.floor(card.attack * 0.5);
+  }
+
+  // swarm: +300 ATK for each Bug ally on field
+  if (ability.id === 'swarm') {
+    const bugAllies = owner.field.filter(c => c.type === ElementType.BUG && c.uniqueId !== card.uniqueId).length;
+    attackBonus += bugAllies * 300;
+  }
+
+  // pressure: enemies have -300 ATK
+  if (ability.id === 'pressure' && effect.type === 'DEBUFF') {
+    // This is applied to opponents, handled separately
+  }
+
+  // lightning_rod: +300 ATK (simplified, originally when targeted by electric)
+  if (ability.id === 'lightning_rod') {
+    attackBonus += 300;
+  }
+
+  // sand_veil: 20% evasion
+  if (ability.id === 'sand_veil') {
+    evasion = 0.2;
+  }
+
+  return { attack: attackBonus, defense: defenseBonus, evasion };
+};
+
+// Calculate debuffs from opponent's passive abilities
+const calculateOpponentPassiveDebuffs = (targetCard: Card, opponent: Player): { attack: number, defense: number } => {
+  let attackDebuff = 0;
+  let defenseDebuff = 0;
+
+  // Check all opponent cards for pressure ability
+  opponent.field.forEach(opponentCard => {
+    if (opponentCard.ability?.id === 'pressure' && opponentCard.ability.trigger === AbilityTrigger.PASSIVE) {
+      attackDebuff -= 300;
+    }
+  });
+
+  return { attack: attackDebuff, defense: defenseDebuff };
+};
+
 // Helper to check and activate traps
 const checkAndActivateTraps = (
   trapOwner: Player,
@@ -291,6 +454,7 @@ export const useGameLogic = () => {
     const current = isPlayer ? gameStateRef.current.player : gameStateRef.current.npc;
     
     let totalStatusDamage = 0;
+    let totalHealAmount = 0;
     const processedField: Card[] = [];
     
     current.field.forEach(card => {
@@ -301,6 +465,21 @@ export const useGameLogic = () => {
       if (result.damage > 0) {
         soundService.playDamage();
       }
+
+      // Process ON_TURN_END abilities (rain_dish)
+      if (card.ability?.trigger === AbilityTrigger.ON_TURN_END) {
+        const abilityResult = processAbility(card, AbilityTrigger.ON_TURN_END, {
+          owner: current,
+          opponent: isPlayer ? gameStateRef.current.npc : gameStateRef.current.player
+        });
+
+        if (abilityResult) {
+          abilityResult.logs.forEach(log => addLog(log, 'effect'));
+          if (abilityResult.healOwner && abilityResult.healOwner > 0) {
+            totalHealAmount += abilityResult.healOwner;
+          }
+        }
+      }
       
       processedField.push({
         ...result.card,
@@ -308,22 +487,22 @@ export const useGameLogic = () => {
       });
     });
 
-    if (totalStatusDamage > 0) {
-      const fn = isPlayer ? setPlayer : setNpc;
+    const fn = isPlayer ? setPlayer : setNpc;
+    
+    if (totalStatusDamage > 0 || totalHealAmount > 0) {
       fn(p => ({
         ...p,
         field: processedField,
-        hp: Math.max(0, p.hp - totalStatusDamage)
+        hp: Math.min(8000, Math.max(0, p.hp - totalStatusDamage + totalHealAmount))
       }));
       
-      if (current.hp - totalStatusDamage <= 0) {
-          finishGame(isPlayer ? 'npc' : 'player', 'status_damage');
-        }
+      if (current.hp - totalStatusDamage + totalHealAmount <= 0) {
+        finishGame(isPlayer ? 'npc' : 'player', 'status_damage');
+      }
     } else {
-      const fn = isPlayer ? setPlayer : setNpc;
       fn(p => ({ ...p, field: processedField }));
     }
-  }, [addLog]);
+  }, [addLog, finishGame]);
 
   const handleDrawPhase = useCallback(() => {
     const isPlayer = gameStateRef.current.currentTurnPlayer === 'player';
@@ -551,8 +730,83 @@ export const useGameLogic = () => {
       const defender = defenderState.field.find(c => c.uniqueId === targetId);
       let defenderWouldDie: boolean | undefined;
       if (defender) {
+        // Process ON_ATTACK ability (when attacking but not destroying yet)
+        if (attacker.ability?.trigger === AbilityTrigger.ON_ATTACK) {
+          const abilityResult = processAbility(attacker, AbilityTrigger.ON_ATTACK, {
+            owner: attackerState,
+            opponent: defenderState,
+            attacker: attacker,
+            defender: defender,
+            destroyed: false
+          });
+
+          if (abilityResult && abilityResult.statusToApply && abilityResult.statusToApply.length > 0) {
+            abilityResult.logs.forEach(log => addLog(log, 'effect'));
+            // Apply status effects immediately (burn_touch, etc)
+            const fn = isPlayer ? setNpc : setPlayer;
+            fn(p => ({
+              ...p,
+              field: p.field.map(c => {
+                const statusTarget = abilityResult.statusToApply!.find(se => se.target.uniqueId === c.uniqueId);
+                return statusTarget ? applyStatusEffect(c, statusTarget.status, 3) : c;
+              })
+            }));
+          }
+        }
+
+        // Process ON_DAMAGE ability (defender receiving damage)
+        if (defender.ability?.trigger === AbilityTrigger.ON_DAMAGE) {
+          const abilityResult = processAbility(defender, AbilityTrigger.ON_DAMAGE, {
+            owner: defenderState,
+            opponent: attackerState,
+            attacker: attacker
+          });
+
+          if (abilityResult && abilityResult.statusToApply && abilityResult.statusToApply.length > 0) {
+            abilityResult.logs.forEach(log => addLog(log, 'effect'));
+            // Apply status effects to attacker (poison_point, static, synchronize)
+            const fn = isPlayer ? setPlayer : setNpc;
+            fn(p => ({
+              ...p,
+              field: p.field.map(c => {
+                const statusTarget = abilityResult.statusToApply!.find(se => se.target.uniqueId === c.uniqueId);
+                return statusTarget ? applyStatusEffect(c, statusTarget.status, 3) : c;
+              })
+            }));
+          }
+        }
+
         setDamagedCardId(targetId);
-        const result = GameRules.resolveCombat(attacker, defender);
+        
+        // Apply passive bonuses/debuffs before combat
+        const attackerPassive = calculatePassiveStats(attacker, attackerState, defenderState);
+        const defenderPassive = calculatePassiveStats(defender, defenderState, attackerState);
+        const attackerDebuffs = calculateOpponentPassiveDebuffs(attacker, defenderState);
+        const defenderDebuffs = calculateOpponentPassiveDebuffs(defender, attackerState);
+
+        // Check sand_veil evasion
+        if (defenderPassive.evasion && Math.random() < defenderPassive.evasion) {
+          addLog(`${defender.name} evadiu o ataque! (Véu de Areia)`, 'effect');
+          setDamagedCardId(null);
+          setAttackingCardId(null);
+          setFloatingDamage(null);
+          setIsAnimating(false);
+          return;
+        }
+
+        // Create modified cards with passive bonuses
+        const modifiedAttacker = {
+          ...attacker,
+          attack: attacker.attack + attackerPassive.attack + attackerDebuffs.attack,
+          defense: attacker.defense + attackerPassive.defense + attackerDebuffs.defense
+        };
+        const modifiedDefender = {
+          ...defender,
+          attack: defender.attack + defenderPassive.attack + defenderDebuffs.attack,
+          defense: defender.defense + defenderPassive.defense + defenderDebuffs.defense
+        };
+
+        const result = GameRules.resolveCombat(modifiedAttacker, modifiedDefender);
         addLog(`${attacker.name} efetivo ${result.attackerEffective} (x${result.multiplier}) vs ${defender.name} efetivo ${result.defenderEffective}`, 'combat');
         
         if (result.damageToDefenderOwner > 0) {
@@ -580,6 +834,81 @@ export const useGameLogic = () => {
 
         setTimeout(() => {
           if (!result.defenderSurvived) {
+            // Process ON_ATTACK ability (after destroying defender)
+            if (attacker.ability?.trigger === AbilityTrigger.ON_ATTACK) {
+              const abilityResult = processAbility(attacker, AbilityTrigger.ON_ATTACK, {
+                owner: attackerState,
+                opponent: defenderState,
+                attacker: attacker,
+                defender: defender,
+                destroyed: true
+              });
+
+              if (abilityResult) {
+                abilityResult.logs.forEach(log => addLog(log, 'effect'));
+
+                // Apply draw cards (pickup ability)
+                if (abilityResult.drawCards && abilityResult.drawCards > 0) {
+                  const fn = isPlayer ? setPlayer : setNpc;
+                  fn(p => {
+                    const drawn = p.deck.slice(0, abilityResult.drawCards);
+                    return {
+                      ...p,
+                      hand: [...p.hand, ...drawn],
+                      deck: p.deck.slice(abilityResult.drawCards)
+                    };
+                  });
+                }
+
+                // Apply status effects (burn_touch)
+                if (abilityResult.statusToApply && abilityResult.statusToApply.length > 0) {
+                  const fn = isPlayer ? setNpc : setPlayer;
+                  fn(p => ({
+                    ...p,
+                    field: p.field.map(c => {
+                      const statusTarget = abilityResult.statusToApply!.find(se => se.target.uniqueId === c.uniqueId);
+                      return statusTarget ? applyStatusEffect(c, statusTarget.status, 3) : c;
+                    })
+                  }));
+                }
+              }
+            }
+
+            // Process ON_DESTROY ability (defender being destroyed)
+            if (defender.ability?.trigger === AbilityTrigger.ON_DESTROY) {
+              const destroyAbilityResult = processAbility(defender, AbilityTrigger.ON_DESTROY, {
+                owner: defenderState,
+                opponent: attackerState
+              });
+
+              if (destroyAbilityResult) {
+                destroyAbilityResult.logs.forEach(log => addLog(log, 'effect'));
+
+                // Apply heal to owner
+                if (destroyAbilityResult.healOwner && destroyAbilityResult.healOwner > 0) {
+                  const fn = isPlayer ? setNpc : setPlayer;
+                  fn(p => ({ ...p, hp: Math.min(8000, p.hp + destroyAbilityResult.healOwner!) }));
+                }
+
+                // Apply revive
+                if (destroyAbilityResult.reviveCard) {
+                  const fn = isPlayer ? setNpc : setPlayer;
+                  setTimeout(() => {
+                    fn(p => {
+                      if (p.field.length < 3) {
+                        return {
+                          ...p,
+                          field: [...p.field, destroyAbilityResult.reviveCard!]
+                        };
+                      }
+                      return p;
+                    });
+                    addLog(`${defender.name} renasceu no campo!`, 'effect');
+                  }, 500);
+                }
+              }
+            }
+
             const fn = isPlayer ? setNpc : setPlayer;
             fn(p => ({ ...p, field: p.field.filter(c => c.uniqueId !== targetId), graveyard: [...p.graveyard, { ...defender, destroyedAt: Date.now() }] }));
             addLog(`${defender.name} foi nocauteado!`, 'info');
@@ -766,8 +1095,39 @@ export const useGameLogic = () => {
     
     // Trigger ON_SUMMON ability
     if (card.ability?.trigger === AbilityTrigger.ON_SUMMON) {
-      addLog(`${card.name} ativou ${card.ability.name}!`, 'effect');
-      soundService.playBuff();
+      const abilityResult = processAbility(card, AbilityTrigger.ON_SUMMON, {
+        owner: state,
+        opponent: opponent
+      });
+      
+      if (abilityResult) {
+        abilityResult.logs.forEach(log => addLog(log, 'effect'));
+        soundService.playBuff();
+
+        // Apply draw cards
+        if (abilityResult.drawCards && abilityResult.drawCards > 0) {
+          setFn(p => {
+            const drawn = p.deck.slice(0, abilityResult.drawCards);
+            return {
+              ...p,
+              hand: [...p.hand, ...drawn],
+              deck: p.deck.slice(abilityResult.drawCards)
+            };
+          });
+        }
+
+        // Apply status effects to opponents
+        if (abilityResult.statusToApply && abilityResult.statusToApply.length > 0) {
+          const opponentSetFn = owner === 'player' ? setNpc : setPlayer;
+          opponentSetFn(p => ({
+            ...p,
+            field: p.field.map(c => {
+              const statusTarget = abilityResult.statusToApply!.find(se => se.target.uniqueId === c.uniqueId);
+              return statusTarget ? applyStatusEffect(c, statusTarget.status, 3) : c;
+            })
+          }));
+        }
+      }
     }
 
     // Check for ON_SUMMON traps from opponent
