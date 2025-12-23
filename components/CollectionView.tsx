@@ -208,14 +208,14 @@ export const CollectionView: React.FC<CollectionViewProps> = ({ onClose, onBack 
             >
               Comprar (💰 200)
             </button>
-            {(import.meta as any).env?.DEV && (
+            {/* {(import.meta as any).env?.DEV && (
               <button
                 onClick={handleGiveMissingCards}
                 className="px-6 py-3 rounded-xl font-bold text-lg bg-indigo-600 hover:bg-indigo-500 text-white"
               >
                 Obter Todas Cartas
               </button>
-            )}
+            )} */}
           </div>
         </div>
 
