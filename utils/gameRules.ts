@@ -38,20 +38,22 @@ export const GameRules = {
     let damageToAttackerOwner = 0;
 
     const atkMultiplier = GameRules.TYPE_TABLE[attacker.type]?.[defender.type] ?? 1;
-    const defMultiplier = GameRules.TYPE_TABLE[defender.type]?.[attacker.type] ?? 1;
 
     const attackerEffective = Math.round(attacker.attack * atkMultiplier);
-    const defenderEffective = Math.round(defender.attack * defMultiplier);
+    const defenderEffective = Math.round(defender.defense);
 
     if (attackerEffective > defenderEffective) {
       defenderSurvived = false;
-      damageToDefenderOwner = Math.max(0, attackerEffective - defender.defense);
+      damageToDefenderOwner = attackerEffective - defenderEffective;
     } else if (attackerEffective < defenderEffective) {
       attackerSurvived = false;
-      damageToAttackerOwner = Math.max(0, defenderEffective - attacker.defense);
+      damageToAttackerOwner = defenderEffective - attackerEffective;
     } else {
+      // Empate: ambos são destruídos, mas ninguém leva dano
       attackerSurvived = false;
       defenderSurvived = false;
+      damageToDefenderOwner = 0;
+      damageToAttackerOwner = 0;
     }
 
     return {
