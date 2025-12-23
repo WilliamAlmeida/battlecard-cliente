@@ -8,23 +8,25 @@ export const GameRules = {
 
   canSummon: (player: Player, card: Card): boolean => {
     if (player.field.length >= GameRules.MAX_FIELD_SIZE) return false;
-    const availableSacrifices = (player.hand.length - 1) + player.field.length; // -1 pois a carta em si não conta
+    // Contar apenas Pokémons disponíveis para sacrifício (mão + campo), excluindo a carta sendo invocada
+    const pokemonsInHand = player.hand.filter(c => c.cardType === 'POKEMON' && c.uniqueId !== card.uniqueId).length;
+    const availableSacrifices = pokemonsInHand + player.field.length;
     return availableSacrifices >= card.sacrificeRequired;
   },
 
   // Tabela de multiplicadores semelhante ao estilo Pokémon (2, 0.5, 0)
   TYPE_TABLE: ((): Record<ElementType, Partial<Record<ElementType, number>>> => {
     const t: Record<ElementType, Partial<Record<ElementType, number>>> = {
-      GRASS:  { WATER: 2, GROUND: 2, FIRE: 0.5, BUG: 0.5, POISON: 0.5 },
-      FIRE:   { GRASS: 2, BUG: 2, WATER: 0.5, GROUND: 0.5 },
-      WATER:  { FIRE: 2, GROUND: 2, GRASS: 0.5, ELECTRIC: 0.5 },
-      ELECTRIC: { WATER: 2, GRASS: 0.5, GROUND: 0 },
+      GRASS:  { WATER: 1.5, GROUND: 1.5, FIRE: 0.5, BUG: 0.5, POISON: 0.5 },
+      FIRE:   { GRASS: 1.5, BUG: 1.5, WATER: 0.5, GROUND: 0.5 },
+      WATER:  { FIRE: 1.5, GROUND: 1.5, GRASS: 0.5, ELECTRIC: 0.5 },
+      ELECTRIC: { WATER: 1.5, GRASS: 0.5, GROUND: 0 },
       NORMAL: {},
-      BUG:    { GRASS: 2, PSYCHIC: 2, FIRE: 0.5, FIGHTING: 0.5, POISON: 0.5 },
-      POISON: { GRASS: 2, POISON: 0.5 },
-      GROUND: { FIRE: 2, ELECTRIC: 2, POISON: 2, GRASS: 0.5 },
-      FIGHTING: { NORMAL: 2, BUG: 2, PSYCHIC: 0.5 },
-      PSYCHIC: { FIGHTING: 2, POISON: 2, PSYCHIC: 0.5 }
+      BUG:    { GRASS: 1.5, PSYCHIC: 1.5, FIRE: 0.5, FIGHTING: 0.5, POISON: 0.5 },
+      POISON: { GRASS: 1.5, POISON: 0.5 },
+      GROUND: { FIRE: 1.5, ELECTRIC: 1.5, POISON: 1.5, GRASS: 0.5 },
+      FIGHTING: { NORMAL: 1.5, BUG: 1.5, PSYCHIC: 0.5 },
+      PSYCHIC: { FIGHTING: 1.5, POISON: 1.5, PSYCHIC: 0.5 }
     };
     return t;
   })(),
