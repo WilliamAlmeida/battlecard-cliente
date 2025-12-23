@@ -191,8 +191,32 @@ export const CardComponent: React.FC<CardProps> = ({ card, compact, isOpponent, 
   }
 
   // Pokemon Card
+  // Build background URL from card name (lowercase, spaces -> '-') and apply
+  const imageName = card.name
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9-]/g, '');
+  const bgUrl = `https://img.pokemondb.net/sprites/scarlet-violet/icon/avif/${imageName || 'voltorb'}.avif`;
+  const previewBgStyle: React.CSSProperties = {
+    backgroundImage: `url('${bgUrl}')`,
+    backgroundRepeat: 'no-repeat',
+    backgroundPosition: 'center top',
+    backgroundSize: compact ? '120px 112px' : '120px 112px',
+  };
+
   return (
     <div className={baseClasses}>
+      <div
+        className="absolute inset-0 pointer-events-none -top-1 -left-9 z-[1]"
+        style={{
+          ...previewBgStyle,
+          transform: 'scaleX(-1)',
+          transformOrigin: 'center',
+        }}
+      />
+
       {/* Status Effects */}
       {activeStatuses.length > 0 && (
         <div className="absolute bottom-0 left-1/2 -translate-x-1/2 flex items-center">
@@ -202,8 +226,8 @@ export const CardComponent: React.FC<CardProps> = ({ card, compact, isOpponent, 
         </div>
       )}
 
-      <div className="flex justify-between items-start pointer-events-none mt-1">
-        <span className="font-semibold sm:font-bold text-s md:text-lg truncate leading-tight drop-shadow-lg tracking-tighter italic max-w-full overflow-hidden">{card.name}</span>
+      <div className="flex justify-between items-start pointer-events-none mt-1 mb-2 z-[2]">
+        <span className="font-semibold sm:font-bold text-s md:text-base truncate leading-tight drop-shadow-lg tracking-tighter italic max-w-full overflow-hidden">{card.name}</span>
       </div>
 
       {/* Rarity indicator for legendaries */}
@@ -228,14 +252,16 @@ export const CardComponent: React.FC<CardProps> = ({ card, compact, isOpponent, 
         )}
       </div>
 
-      <div className="flex justify-between items-center px-2 py-1 sm:py-2 bg-black/30 rounded-lg sm:rounded-xl border border-white/10 mb-1">
+      <div className="flex justify-between items-center px-1 py-1 sm:py-2 bg-black/30 rounded-t-lg sm:rounded-t-xl border-t border-x border-white/10">
         <Tooltip width="w-auto" content={(<div className="text-sm">Tipo: <span className="font-mono">{card.type}</span></div>)}>
-          <span className="sm:text-3xl cursor-help">{getTypeIcon(card.type)}</span>
+          <span className="sm:text-3xl cursor-help h-10 w-10 block">
+            {/* {getTypeIcon(card.type)} */}
+          </span>
         </Tooltip>
 
         {/* Ability Indicator */}
         {card.ability ? (
-          <div>
+          <div className="translate-x-1 translate-y-3">
             <Tooltip content={(
               <div>
                 <div className="font-black text-base">{card.ability.name}</div>
@@ -248,18 +274,18 @@ export const CardComponent: React.FC<CardProps> = ({ card, compact, isOpponent, 
             </Tooltip>
           </div>
         ) : (
-            <span className="grayscale text-2xl opacity-35 pointer-events-none">💫</span>
+            <span className="grayscale text-2xl opacity-35 pointer-events-none translate-x-1 translate-y-3">💫</span>
         )}
       </div>
 
-      <div className="bg-black/60 rounded-lg sm:rounded-xl py-1 sm:py-2 px-1 flex gap-x-1 justify-around font-mono font-black border-2 border-white/10 shadow-lg">
+      <div className="bg-black/60 rounded-b-lg sm:rounded-b-xl py-1 sm:py-2 px-1 flex gap-x-1 justify-around font-mono font-black border-b-2 border-x-2 border-white/10 shadow-lg">
         <div className="text-red-400 flex flex-col items-center justify-center">
             <span className="text-[10px] md:text-xs uppercase opacity-60 font-sans tracking-widest leading-none">ATK</span>
             <span className={`drop-shadow-sm ${compact ? 'text-sm' : 'text-sm'}`}>{card.attack}</span>
         </div>
         <div className="text-blue-400 flex flex-col items-center justify-center">
-             <span className="text-[10px] md:text-xs uppercase opacity-60 font-sans tracking-widest leading-none">DEF</span>
-             <span className={`drop-shadow-sm ${compact ? 'text-sm' : 'text-sm'}`}>{card.defense}</span>
+            <span className="text-[10px] md:text-xs uppercase opacity-60 font-sans tracking-widest leading-none">DEF</span>
+            <span className={`drop-shadow-sm ${compact ? 'text-sm' : 'text-sm'}`}>{card.defense}</span>
         </div>
       </div>
       
