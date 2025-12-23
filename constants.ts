@@ -111,8 +111,8 @@ export const SPELL_CARDS: CardBase[] = [
   createSpell('spell_master_ball', 'Master Ball', { type: 'DESTROY', target: 'SINGLE_ENEMY', specialId: 'capture_guaranteed' }, Rarity.LEGENDARY),
   
   // Comprar cartas
-  createSpell('spell_bill', 'Bill', { type: 'DRAW', value: 2, target: 'OWNER' }, Rarity.COMMON),
-  createSpell('spell_professor_oak', 'Professor Oak', { type: 'DRAW', value: 3, target: 'OWNER' }, Rarity.RARE),
+  createSpell('spell_bill', 'Bill', { type: 'DRAW', value: 1, target: 'OWNER' }, Rarity.COMMON),
+  createSpell('spell_professor_oak', 'Professor Oak', { type: 'DRAW', value: 2, target: 'OWNER' }, Rarity.RARE),
   
   // Status
   createSpell('spell_sleep_powder', 'Pó do Sono', { type: 'STATUS', statusEffect: StatusEffect.SLEEP, target: 'SINGLE_ENEMY' }, Rarity.UNCOMMON),
