@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Card, CardType, Rarity, ElementType } from '../types';
+import { CardComponent } from './CardComponent';
 import { collectionService } from '../services/collectionService';
 import Tooltip from './Tooltip';
 import { INITIAL_DECK, SPELL_CARDS, TRAP_CARDS } from '../constants';
@@ -54,6 +55,7 @@ export const CollectionView: React.FC<CollectionViewProps> = ({ onClose, onBack 
   const [typeFilter, setTypeFilter] = useState<ElementType | 'all'>('all');
   const [rarityFilter, setRarityFilter] = useState<Rarity | 'all'>('all');
   const [showOnlyOwned, setShowOnlyOwned] = useState(false);
+  const [viewMode, setViewMode] = useState<'tiles' | 'component'>('tiles');
   const [openingPack, setOpeningPack] = useState(false);
   const [packResults, setPackResults] = useState<string[]>([]);
 
@@ -220,7 +222,7 @@ export const CollectionView: React.FC<CollectionViewProps> = ({ onClose, onBack 
         </div>
 
         {/* Filters */}
-        <div className="flex flex-wrap gap-4 mb-6">
+        <div className="flex flex-wrap gap-4 mb-6 items-center">
           <select 
             value={filter}
             onChange={e => setFilter(e.target.value as any)}
@@ -231,6 +233,23 @@ export const CollectionView: React.FC<CollectionViewProps> = ({ onClose, onBack 
             <option value="spell">Magias</option>
             <option value="trap">Armadilhas</option>
           </select>
+
+          <div className="flex items-center gap-2 ml-2">
+            <button
+              onClick={() => setViewMode('tiles')}
+              className={`px-4 py-2 rounded-xl font-bold ${viewMode === 'tiles' ? 'bg-slate-600' : 'bg-slate-800'}`}
+            >
+              Grade
+            </button>
+            <button
+              onClick={() => setViewMode('component')}
+              className={`px-4 py-2 rounded-xl font-bold ${viewMode === 'component' ? 'bg-slate-600' : 'bg-slate-800'}`}
+            >
+              Cartas
+            </button>
+
+            {/* Component view is always compact by design */}
+          </div>
 
           <select 
             value={typeFilter}
@@ -265,86 +284,105 @@ export const CollectionView: React.FC<CollectionViewProps> = ({ onClose, onBack 
           </label>
         </div>
 
-        {/* Cards Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4">
-          {filteredCards.map(card => {
-            const owned = collectionService.hasCard(card.id);
-            const quantity = collectionService.getCardQuantity(card.id);
-            
-            return (
-              <div 
-                key={card.id}
-                className={`
-                  p-4 rounded-xl border-2 transition-all relative
-                  ${getRarityColor(card.rarity)}
-                  ${!owned && 'opacity-30 grayscale'}
-                `}
-              >
-                {quantity > 1 && (
-                  <div className="absolute -top-2 -right-2 bg-yellow-500 text-black w-6 h-6 rounded-full flex items-center justify-center font-bold text-sm">
-                    {quantity}
-                  </div>
-                )}
-                
-                <div className="text-3xl mb-2 text-center">{getTypeIcon(card.type)}</div>
-                <div className="font-bold text-sm text-center truncate">{card.name}</div>
+        {/* Cards Grid or Component View */}
+        {viewMode === 'tiles' ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4">
+            {filteredCards.map(card => {
+              const owned = collectionService.hasCard(card.id);
+              const quantity = collectionService.getCardQuantity(card.id);
+              
+              return (
+                <div 
+                  key={card.id}
+                  className={`
+                    p-4 rounded-xl border-2 transition-all relative
+                    ${getRarityColor(card.rarity)}
+                    ${!owned && 'opacity-30 grayscale'}
+                  `}
+                >
+                  {quantity > 1 && (
+                    <div className="absolute -top-2 -right-2 bg-yellow-500 text-black w-6 h-6 rounded-full flex items-center justify-center font-bold text-sm">
+                      {quantity}
+                    </div>
+                  )}
+                  
+                  <div className="text-3xl mb-2 text-center">{getTypeIcon(card.type)}</div>
+                  <div className="font-bold text-sm text-center truncate">{card.name}</div>
 
-                {card.cardType === CardType.POKEMON && card.ability && (
-                  <div className="text-center text-xs text-purple-300 mt-1">
-                    <Tooltip content={(
-                      <div>
-                        <div className="font-black text-sm">{card.ability.name}</div>
-                        <div className="text-xs mt-1">{card.ability.description}</div>
-                        <div className="text-xs mt-1 opacity-80">Trigger: <span className="font-mono">{card.ability.trigger}</span></div>
-                      </div>
-                    )}>
-                      <span className="cursor-help">💫 {card.ability.name}</span>
-                    </Tooltip>
+                  {card.cardType === CardType.POKEMON && card.ability && (
+                    <div className="text-center text-xs text-purple-300 mt-1">
+                      <Tooltip content={(
+                        <div>
+                          <div className="font-black text-sm">{card.ability.name}</div>
+                          <div className="text-xs mt-1">{card.ability.description}</div>
+                          <div className="text-xs mt-1 opacity-80">Trigger: <span className="font-mono">{card.ability.trigger}</span></div>
+                        </div>
+                      )}>
+                        <span className="cursor-help">💫 {card.ability.name}</span>
+                      </Tooltip>
+                    </div>
+                  )}
+                  
+                  {card.cardType === CardType.POKEMON && (
+                    <div className="flex justify-between text-xs mt-2">
+                      <span className="text-red-400">⚔️ {card.attack}</span>
+                      <span className="text-blue-400">🛡️ {card.defense}</span>
+                    </div>
+                  )}
+                  
+                  {card.cardType === CardType.SPELL && (
+                    <div className="text-center text-xs text-purple-400 mt-2">
+                      <Tooltip content={(
+                        <div>
+                          <div className="font-black text-sm">{card.name}</div>
+                          <div className="text-xs mt-1">{card.spellEffect ? String(card.spellEffect.type) + (card.spellEffect.value ? ` (${card.spellEffect.value})` : '') : 'Efeito desconhecido'}</div>
+                        </div>
+                      )}>
+                        <span className="cursor-help">🪄 Magia</span>
+                      </Tooltip>
+                    </div>
+                  )}
+                  
+                  {card.cardType === CardType.TRAP && (
+                    <div className="text-center text-xs text-orange-400 mt-2">
+                      <Tooltip content={(
+                        <div>
+                          <div className="font-black text-sm">{card.name}</div>
+                          <div className="text-xs mt-1">{card.trapEffect ? String(card.trapEffect.type) + (card.trapEffect.value ? ` (${card.trapEffect.value})` : '') : 'Efeito desconhecido'}</div>
+                        </div>
+                      )}>
+                        <span className="cursor-help">🪤 Armadilha</span>
+                      </Tooltip>
+                    </div>
+                  )}
+                  
+                  <div className="text-center mt-2">
+                    {Array.from({ length: card.level }).map((_, i) => (
+                      <span key={i} className="text-yellow-400 text-xs">★</span>
+                    ))}
                   </div>
-                )}
-                
-                {card.cardType === CardType.POKEMON && (
-                  <div className="flex justify-between text-xs mt-2">
-                    <span className="text-red-400">⚔️ {card.attack}</span>
-                    <span className="text-blue-400">🛡️ {card.defense}</span>
-                  </div>
-                )}
-                
-                {card.cardType === CardType.SPELL && (
-                  <div className="text-center text-xs text-purple-400 mt-2">
-                    <Tooltip content={(
-                      <div>
-                        <div className="font-black text-sm">{card.name}</div>
-                        <div className="text-xs mt-1">{card.spellEffect ? String(card.spellEffect.type) + (card.spellEffect.value ? ` (${card.spellEffect.value})` : '') : 'Efeito desconhecido'}</div>
-                      </div>
-                    )}>
-                      <span className="cursor-help">🪄 Magia</span>
-                    </Tooltip>
-                  </div>
-                )}
-                
-                {card.cardType === CardType.TRAP && (
-                  <div className="text-center text-xs text-orange-400 mt-2">
-                    <Tooltip content={(
-                      <div>
-                        <div className="font-black text-sm">{card.name}</div>
-                        <div className="text-xs mt-1">{card.trapEffect ? String(card.trapEffect.type) + (card.trapEffect.value ? ` (${card.trapEffect.value})` : '') : 'Efeito desconhecido'}</div>
-                      </div>
-                    )}>
-                      <span className="cursor-help">🪤 Armadilha</span>
-                    </Tooltip>
-                  </div>
-                )}
-                
-                <div className="text-center mt-2">
-                  {Array.from({ length: card.level }).map((_, i) => (
-                    <span key={i} className="text-yellow-400 text-xs">★</span>
-                  ))}
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="flex flex-wrap justify-between gap-4 sm:gap-8">
+            {filteredCards.map(card => {
+              const owned = collectionService.hasCard(card.id);
+              const quantity = collectionService.getCardQuantity(card.id);
+              return (
+                <div key={card.id} className={`${!owned ? 'opacity-30 grayscale' : ''} relative`}> 
+                  <CardComponent card={card as any} compact />
+                  {quantity > 1 && (
+                    <div className="absolute -top-2 -right-2 bg-yellow-500 text-black w-6 h-6 rounded-full flex items-center justify-center font-bold text-sm">
+                      {quantity}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );
