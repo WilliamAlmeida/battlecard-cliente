@@ -656,34 +656,8 @@ export const useGameLogic = () => {
         } else {
           const action = AIController.decideNextMove(npc, player, phase, gameStateRef.current.difficulty);
           if (action.type === 'SUMMON' && action.cardId) {
-            const card = npc.hand.find(c => c.uniqueId === action.cardId);
-            if (card) {
-               const sacrifices = action.sacrifices || [];
-               setNpc(p => {
-                 const removedFromField = p.field.filter(c => sacrifices.includes(c.uniqueId));
-                 const removedFromHand = p.hand.filter(c => sacrifices.includes(c.uniqueId));
-                 const newHand = p.hand.filter(c => c.uniqueId !== action.cardId && !sacrifices.includes(c.uniqueId));
-                 const newField = [...p.field.filter(c => !sacrifices.includes(c.uniqueId)), { ...card, hasAttacked: false }];
-                 const newGrave = [
-                   ...p.graveyard,
-                   ...removedFromField.map(c => ({ ...c, destroyedAt: Date.now() })),
-                   ...removedFromHand.map(c => ({ ...c, destroyedAt: Date.now() }))
-                 ];
-                 return { ...p, hand: newHand, field: newField, graveyard: newGrave };
-               });
-
-               // Log de quais cartas foram sacrificadas (campo / mão)
-               if (action.sacrifices && action.sacrifices.length > 0) {
-                 const sacrificedFromField = npc.field.filter(c => (action.sacrifices || []).includes(c.uniqueId));
-                 const sacrificedFromHand = npc.hand.filter(c => (action.sacrifices || []).includes(c.uniqueId));
-                 sacrificedFromField.forEach(c => addLog(`CPU sacrificou ${c.name} do campo`, 'info'));
-                 sacrificedFromHand.forEach(c => addLog(`CPU sacrificou ${c.name} da mão`, 'info'));
-               }
-
-               addLog(`CPU invocou ${card.name}!`);
-               soundService.playSummon();
-               setPhase(Phase.BATTLE);
-            }
+            summonCard('npc', action.cardId, action.sacrifices || []);
+            setPhase(Phase.BATTLE);
           } else if (action.type === 'USE_SPELL' && action.cardId) {
             useSpell('npc', action.cardId, action.targetId);
           } else if (action.type === 'SET_TRAP' && action.cardId) {
