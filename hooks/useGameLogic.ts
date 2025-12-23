@@ -137,8 +137,13 @@ const checkAndActivateTraps = (
   let negateAttack = false;
   let surviveTrap = false;
 
+  const seenTrapIds = new Set<string>();
   trapOwner.trapZone.forEach(trap => {
     if (trap.trapCondition === condition && trap.isSet) {
+      // Only activate one trap instance per card `id` per event.
+      // If multiple traps with the same `id` are set, only the first will trigger.
+      if (seenTrapIds.has(trap.id)) return;
+      seenTrapIds.add(trap.id);
       activatedTraps.push(trap);
       logs.push(`⚠️ TRAP ATIVADA: ${trap.name}!`);
 
