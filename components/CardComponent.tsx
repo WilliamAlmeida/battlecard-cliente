@@ -151,7 +151,7 @@ export const CardComponent: React.FC<CardProps> = ({ card, compact, isOpponent, 
           </Tooltip>
         </div>
         <div className="flex justify-between items-start mb-2 pointer-events-none">
-          <span className="font-black text-lg truncate leading-tight drop-shadow-lg">{card.name}</span>
+          <span className="font-semibold sm:font-bold md:text-base truncate leading-tight drop-shadow-lg">{card.name}</span>
         </div>
         <div className="flex-1 flex items-center justify-center">
           <span className="text-6xl">✨</span>
@@ -178,7 +178,7 @@ export const CardComponent: React.FC<CardProps> = ({ card, compact, isOpponent, 
           </Tooltip>
         </div>
         <div className="flex justify-between items-start mb-2 pointer-events-none">
-          <span className="font-black text-lg truncate leading-tight drop-shadow-lg">{card.name}</span>
+          <span className="font-semibold sm:font-bold md:text-base truncate leading-tight drop-shadow-lg">{card.name}</span>
         </div>
         <div className="flex-1 flex items-center justify-center">
           <span className="text-6xl">{card.isSet ? '❓' : '⚠️'}</span>
@@ -227,7 +227,7 @@ export const CardComponent: React.FC<CardProps> = ({ card, compact, isOpponent, 
       )}
 
       <div className="flex justify-between items-start pointer-events-none mt-1 mb-2 z-[2]">
-        <span className="font-semibold sm:font-bold text-s md:text-base truncate leading-tight drop-shadow-lg tracking-tighter italic max-w-full overflow-hidden">{card.name}</span>
+        <span className="font-semibold sm:font-bold md:text-base truncate leading-tight drop-shadow-lg tracking-tighter italic max-w-full overflow-hidden">{card.name}</span>
       </div>
 
       {/* Rarity indicator for legendaries */}
