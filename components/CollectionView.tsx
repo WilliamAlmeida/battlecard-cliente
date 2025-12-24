@@ -54,6 +54,8 @@ export const CollectionView: React.FC<CollectionViewProps> = ({ onClose, onBack 
   const [filter, setFilter] = useState<'all' | 'pokemon' | 'spell' | 'trap'>('all');
   const [typeFilter, setTypeFilter] = useState<ElementType | 'all'>('all');
   const [rarityFilter, setRarityFilter] = useState<Rarity | 'all'>('all');
+  const [abilityOnly, setAbilityOnly] = useState(false);
+  const [sortBy, setSortBy] = useState<'none'|'atk'|'def'|'star'>('none');
   const [showOnlyOwned, setShowOnlyOwned] = useState(false);
   const [viewMode, setViewMode] = useState<'tiles' | 'component'>('tiles');
   const [openingPack, setOpeningPack] = useState(false);
@@ -66,6 +68,13 @@ export const CollectionView: React.FC<CollectionViewProps> = ({ onClose, onBack 
   const [collection, setCollection] = useState(collectionService.getCollection());
   const allCards = [...INITIAL_DECK, ...SPELL_CARDS, ...TRAP_CARDS];
 
+  useEffect(() => {
+    if (filter === 'spell' || filter === 'trap') {
+      setSortBy('none');
+      setAbilityOnly(false);
+    }
+  }, [filter]);
+
   const filteredCards = allCards.filter(card => {
     if (filter === 'pokemon' && card.cardType !== CardType.POKEMON) return false;
     if (filter === 'spell' && card.cardType !== CardType.SPELL) return false;
@@ -73,7 +82,15 @@ export const CollectionView: React.FC<CollectionViewProps> = ({ onClose, onBack 
     if (typeFilter !== 'all' && card.type !== typeFilter) return false;
     if (rarityFilter !== 'all' && card.rarity !== rarityFilter) return false;
     if (showOnlyOwned && !collectionService.hasCard(card.id)) return false;
+    if (abilityOnly && !card.ability) return false;
     return true;
+  });
+
+  const sortedCards = filteredCards.slice().sort((a, b) => {
+    if (sortBy === 'atk') return (b.attack || 0) - (a.attack || 0);
+    if (sortBy === 'def') return (b.defense || 0) - (a.defense || 0);
+    if (sortBy === 'star') return (b.level || 0) - (a.level || 0);
+    return 0;
   });
 
   const handleOpenPack = () => {
@@ -107,13 +124,13 @@ export const CollectionView: React.FC<CollectionViewProps> = ({ onClose, onBack 
   // reset visibleCount when filters change
   useEffect(() => {
     setVisibleCount(ITEMS_PER_BATCH);
-  }, [filter, typeFilter, rarityFilter, showOnlyOwned, viewMode]);
+  }, [filter, typeFilter, rarityFilter, showOnlyOwned, viewMode, abilityOnly, sortBy]);
 
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const el = e.currentTarget;
     const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 300;
-    if (nearBottom && visibleCount < filteredCards.length) {
-      setVisibleCount(c => Math.min(filteredCards.length, c + ITEMS_PER_BATCH));
+    if (nearBottom && visibleCount < sortedCards.length) {
+      setVisibleCount(c => Math.min(sortedCards.length, c + ITEMS_PER_BATCH));
     }
   };
 
@@ -290,6 +307,31 @@ export const CollectionView: React.FC<CollectionViewProps> = ({ onClose, onBack 
             ))}
           </select>
 
+          {filter !== 'spell' && filter !== 'trap' && (
+            <>
+              <select
+                value={sortBy}
+                onChange={e => setSortBy(e.target.value as any)}
+                className="bg-slate-800 px-4 py-2 rounded-xl"
+              >
+                <option value="none">Ordenar (Nenhum)</option>
+                <option value="atk">Ordenar por Ataque</option>
+                <option value="def">Ordenar por Defesa</option>
+                <option value="star">Ordenar por Estrelas</option>
+              </select>
+
+              <label className="flex items-center gap-2 bg-slate-800 px-4 py-2 rounded-xl cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={abilityOnly}
+                  onChange={e => setAbilityOnly(e.target.checked)}
+                  className="w-5 h-5"
+                />
+                Mostrar apenas com habilidade
+              </label>
+            </>
+          )}
+
           <label className="flex items-center gap-2 bg-slate-800 px-4 py-2 rounded-xl cursor-pointer">
             <input 
               type="checkbox"
@@ -304,7 +346,7 @@ export const CollectionView: React.FC<CollectionViewProps> = ({ onClose, onBack 
         {/* Cards Grid or Component View */}
         {viewMode === 'tiles' ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4">
-            {filteredCards.slice(0, visibleCount).map(card => {
+            {sortedCards.slice(0, visibleCount).map(card => {
               const owned = collectionService.hasCard(card.id);
               const quantity = collectionService.getCardQuantity(card.id);
               
@@ -381,10 +423,10 @@ export const CollectionView: React.FC<CollectionViewProps> = ({ onClose, onBack 
                 </div>
               );
             })}
-            {visibleCount < filteredCards.length && (
+            {visibleCount < sortedCards.length && (
               <div className="col-span-full flex justify-center mt-4">
                 <button
-                  onClick={() => setVisibleCount(c => Math.min(filteredCards.length, c + ITEMS_PER_BATCH))}
+                  onClick={() => setVisibleCount(c => Math.min(sortedCards.length, c + ITEMS_PER_BATCH))}
                   className="px-6 py-3 rounded-xl bg-slate-700 hover:bg-slate-600 font-bold"
                 >
                   Carregar mais
@@ -394,7 +436,7 @@ export const CollectionView: React.FC<CollectionViewProps> = ({ onClose, onBack 
           </div>
         ) : (
           <div className="flex flex-wrap justify-between gap-4 sm:gap-8">
-            {filteredCards.slice(0, visibleCount).map(card => {
+            {sortedCards.slice(0, visibleCount).map(card => {
               const owned = collectionService.hasCard(card.id);
               const quantity = collectionService.getCardQuantity(card.id);
               return (

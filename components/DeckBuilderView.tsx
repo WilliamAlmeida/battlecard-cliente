@@ -58,9 +58,19 @@ export const DeckBuilderView: React.FC<DeckBuilderViewProps> = ({ onBack, onClos
   const [isCreatingNew, setIsCreatingNew] = useState(false);
   const [filter, setFilter] = useState<'all' | 'pokemon' | 'spell' | 'trap'>('all');
   const [typeFilter, setTypeFilter] = useState<ElementType | 'all'>('all');
+  const [rarityFilter, setRarityFilter] = useState<Rarity | 'all'>('all');
+  const [abilityOnly, setAbilityOnly] = useState(false);
+  const [sortBy, setSortBy] = useState<'none'|'atk'|'def'|'star'>('none');
   const [bossEditMode, setBossEditMode] = useState(false);
   const [bosses, setBosses] = useState<any[]>([]);
   const [editingBossId, setEditingBossId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (filter === 'spell' || filter === 'trap') {
+      setSortBy('none');
+      setAbilityOnly(false);
+    }
+  }, [filter]);
 
   const allCards = [...INITIAL_DECK, ...SPELL_CARDS, ...TRAP_CARDS];
   const customDecks = collectionService.getCustomDecks();
@@ -79,7 +89,16 @@ export const DeckBuilderView: React.FC<DeckBuilderViewProps> = ({ onBack, onClos
     if (filter === 'spell' && card.cardType !== CardType.SPELL) return false;
     if (filter === 'trap' && card.cardType !== CardType.TRAP) return false;
     if (typeFilter !== 'all' && card.type !== typeFilter) return false;
+    if (rarityFilter !== 'all' && card.rarity !== rarityFilter) return false;
+    if (abilityOnly && !card.ability) return false;
     return true;
+  });
+
+  const sortedAvailableCards = filteredAvailableCards.slice().sort((a, b) => {
+    if (sortBy === 'atk') return (b.attack || 0) - (a.attack || 0);
+    if (sortBy === 'def') return (b.defense || 0) - (a.defense || 0);
+    if (sortBy === 'star') return (b.level || 0) - (a.level || 0);
+    return 0;
   });
 
   const handleCreateNewDeck = () => {
@@ -222,7 +241,7 @@ export const DeckBuilderView: React.FC<DeckBuilderViewProps> = ({ onBack, onClos
         <div className="sm:grid sm:grid-cols-1 lg:grid-cols-3 gap-8 flex-1 min-h-0 space-y-4 sm:space-y-0">
           {/* Decks Salvos */}
           <div className="bg-slate-800 p-6 rounded-2xl flex flex-col h-full max-h-[50vh] lg:max-h-none min-h-0">
-            <div className="flex justify-between items-center mb-4">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-y-1 sm:gap-y-0">
               <div>
                 <h2 className="text-xl font-bold">
                   {bossEditMode ? 'Decks dos Bosses' : 'Meus Decks'}
@@ -230,7 +249,7 @@ export const DeckBuilderView: React.FC<DeckBuilderViewProps> = ({ onBack, onClos
                 </h2>
                 <div className="text-sm text-slate-400">{bossEditMode ? 'Selecione um boss para editar o deck' : 'Gerencie decks salvos e decks de bosses'}</div>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 self-end">
                 {!bossEditMode && (
                   <button
                     onClick={handleCreateNewDeck}
@@ -256,8 +275,6 @@ export const DeckBuilderView: React.FC<DeckBuilderViewProps> = ({ onBack, onClos
                 </button>
               </div>
             </div>
-
-            
 
             <div className="bg-slate-900/50 rounded-xl p-4 overflow-y-auto flex-1 space-y-3 min-h-0">
               {bossEditMode ? (
@@ -340,7 +357,7 @@ export const DeckBuilderView: React.FC<DeckBuilderViewProps> = ({ onBack, onClos
           </div>
 
           {/* Deck Atual */}
-          <div className={`bg-slate-800 p-6 rounded-2xl flex flex-col h-full max-h-[50vh] lg:max-h-none min-h-0 ${(isCreatingNew || selectedDeckId) ? '' : 'hidden'}`}>
+          <div className={`bg-slate-800 p-6 rounded-2xl flex flex-col max-h-screen sm:max-h-[50vh] lg:max-h-none min-h-0 ${(isCreatingNew || selectedDeckId) ? '' : 'hidden'}`}>
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold">
                 {isCreatingNew || selectedDeckId ? 'Editando Deck' : 'Selecione um deck'}
@@ -474,11 +491,11 @@ export const DeckBuilderView: React.FC<DeckBuilderViewProps> = ({ onBack, onClos
           </div>
 
           {/* Cartas Disponíveis */}
-          <div className={`bg-slate-800 p-6 rounded-2xl flex flex-col h-full max-h-[50vh] lg:max-h-none min-h-0 ${(isCreatingNew || selectedDeckId) ? '' : 'col-span-2'}`}>
+          <div className={`bg-slate-800 p-6 rounded-2xl flex flex-col max-h-screen sm:max-h-[50vh] lg:max-h-none min-h-0 ${(isCreatingNew || selectedDeckId) ? '' : 'col-span-2'}`}>
             <h2 className="text-xl font-bold mb-4">
               Cartas Disponíveis
               <span className="ml-2 text-sm text-slate-400">
-                ({filteredAvailableCards.length})
+                ({sortedAvailableCards.length})
               </span>
             </h2>
 
@@ -505,12 +522,48 @@ export const DeckBuilderView: React.FC<DeckBuilderViewProps> = ({ onBack, onClos
                   <option key={type} value={type}>{getTypeIcon(type)} {type}</option>
                 ))}
               </select>
+
+              <select 
+                value={rarityFilter}
+                onChange={e => setRarityFilter(e.target.value as any)}
+                className="w-full bg-slate-700 px-3 py-2 rounded-xl text-sm"
+              >
+                <option value="all">Todas as Raridades</option>
+                {Object.values(Rarity).map(r => (
+                  <option key={r} value={r}>{getRarityLabel(r)}</option>
+                ))}
+              </select>
+
+              {filter !== 'spell' && filter !== 'trap' && (
+                <>
+                  <select
+                    value={sortBy}
+                    onChange={e => setSortBy(e.target.value as any)}
+                    className="w-full bg-slate-700 px-3 py-2 rounded-xl text-sm"
+                  >
+                    <option value="none">Ordenar (Nenhum)</option>
+                    <option value="atk">Ordenar por Ataque</option>
+                    <option value="def">Ordenar por Defesa</option>
+                    <option value="star">Ordenar por Estrelas</option>
+                  </select>
+
+                  <label className="flex items-center gap-2 bg-slate-700 px-4 py-2 rounded-xl cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={abilityOnly}
+                      onChange={e => setAbilityOnly(e.target.checked)}
+                      className="w-5 h-5"
+                    />
+                    <span className="text-sm text-slate-400">Somente com habilidade</span>
+                  </label>
+                </>
+              )}
             </div>
 
             {/* Available Cards */}
-            <div className="bg-slate-900/50 rounded-xl p-4 overflow-y-auto flex-1 min-h-0">
+              <div className="bg-slate-900/50 rounded-xl p-4 overflow-y-auto flex-1 min-h-0">
               <div className={`grid grid-cols-2 sm:grid-cols-3 gap-2 ${(isCreatingNew || selectedDeckId) ? '' : 'sm:grid-cols-4'}`}>
-                {filteredAvailableCards.map(card => {
+                {sortedAvailableCards.map(card => {
                   const inDeckCount = deckCards.filter(c => c === card.id).length;
                   const canAdd = inDeckCount < 3 && (isCreatingNew || selectedDeckId);
                   
@@ -586,7 +639,7 @@ export const DeckBuilderView: React.FC<DeckBuilderViewProps> = ({ onBack, onClos
                 })}
               </div>
 
-              {filteredAvailableCards.length === 0 && (
+              {sortedAvailableCards.length === 0 && (
                 <div className="text-center text-slate-500 py-8">
                   Nenhuma carta disponível
                 </div>
