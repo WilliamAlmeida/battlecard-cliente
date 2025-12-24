@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardType, Rarity, ElementType } from '../types';
 import { collectionService } from '../services/collectionService';
+import { campaignService } from '../services/campaignService';
 import { INITIAL_DECK, SPELL_CARDS, TRAP_CARDS, MIN_DECK_SIZE, MAX_DECK_SIZE } from '../constants';
 import { soundService } from '../services/soundService';
 import Tooltip from './Tooltip';
@@ -57,9 +58,20 @@ export const DeckBuilderView: React.FC<DeckBuilderViewProps> = ({ onBack, onClos
   const [isCreatingNew, setIsCreatingNew] = useState(false);
   const [filter, setFilter] = useState<'all' | 'pokemon' | 'spell' | 'trap'>('all');
   const [typeFilter, setTypeFilter] = useState<ElementType | 'all'>('all');
+  const [bossEditMode, setBossEditMode] = useState(false);
+  const [bosses, setBosses] = useState<any[]>([]);
+  const [editingBossId, setEditingBossId] = useState<string | null>(null);
 
   const allCards = [...INITIAL_DECK, ...SPELL_CARDS, ...TRAP_CARDS];
   const customDecks = collectionService.getCustomDecks();
+  useEffect(() => {
+    try {
+      const bs = campaignService.getBosses();
+      setBosses(bs || []);
+    } catch (e) {
+      setBosses([]);
+    }
+  }, []);
   
   const filteredAvailableCards = allCards.filter(card => {
     if (!collectionService.hasCard(card.id)) return false;
@@ -107,14 +119,20 @@ export const DeckBuilderView: React.FC<DeckBuilderViewProps> = ({ onBack, onClos
         return;
       }
 
-    if (selectedDeckId) {
-      collectionService.updateDeck(selectedDeckId, deckName, deckCards);
+    if (bossEditMode && editingBossId) {
+      // In boss edit mode we don't persist changes to campaign file here.
+      // The user can copy the resulting array with the copy button.
+      soundService.playAchievement();
     } else {
-      const newDeck = collectionService.createDeck(deckName, deckCards);
-      // If there is no selected deck persisted yet, mark this new deck as selected
-      if (!collectionService.getSelectedDeckId()) {
-        collectionService.setSelectedDeckId(newDeck.id);
-        setSelectedDeckId(newDeck.id);
+      if (selectedDeckId) {
+        collectionService.updateDeck(selectedDeckId, deckName, deckCards);
+      } else {
+        const newDeck = collectionService.createDeck(deckName, deckCards);
+        // If there is no selected deck persisted yet, mark this new deck as selected
+        if (!collectionService.getSelectedDeckId()) {
+          collectionService.setSelectedDeckId(newDeck.id);
+          setSelectedDeckId(newDeck.id);
+        }
       }
     }
 
@@ -123,6 +141,29 @@ export const DeckBuilderView: React.FC<DeckBuilderViewProps> = ({ onBack, onClos
     setSelectedDeckId(null);
     setDeckCards([]);
     setDeckName('');
+  };
+
+  const handleLoadBossDeck = (bossId: string) => {
+    const boss = bosses.find(b => b.id === bossId);
+    if (!boss) return;
+    soundService.playClick();
+    setEditingBossId(bossId);
+    setIsCreatingNew(true);
+    setSelectedDeckId(null);
+    setDeckCards([...boss.deck]);
+    setDeckName(`Boss: ${boss.name}`);
+  };
+
+  const handleCopyArray = async () => {
+    const arrString = `[${deckCards.map(c => `'${c}'`).join(', ')}]`;
+    try {
+      await navigator.clipboard.writeText(arrString);
+      soundService.playAchievement();
+      alert('Array copiado para a área de transferência!');
+    } catch (e) {
+      // fallback
+      prompt('Copiar este array e cole no código:', arrString);
+    }
   };
 
   const handleDeleteDeck = (deckId: string) => {
@@ -182,58 +223,118 @@ export const DeckBuilderView: React.FC<DeckBuilderViewProps> = ({ onBack, onClos
           {/* Decks Salvos */}
           <div className="bg-slate-800 p-6 rounded-2xl flex flex-col h-full max-h-[50vh] lg:max-h-none min-h-0">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold">
-                Meus Decks
-                <span className="ml-2 text-sm text-slate-400">({customDecks.length})</span>
-              </h2>
-              <button
-                onClick={handleCreateNewDeck}
-                className="bg-green-600 px-4 py-2 rounded-xl font-bold text-sm hover:bg-green-500"
-              >
-                + Novo
-              </button>
+              <div>
+                <h2 className="text-xl font-bold">
+                  {bossEditMode ? 'Decks dos Bosses' : 'Meus Decks'}
+                  <span className="ml-2 text-sm text-slate-400">({bossEditMode ? bosses.length : customDecks.length})</span>
+                </h2>
+                <div className="text-sm text-slate-400">{bossEditMode ? 'Selecione um boss para editar o deck' : 'Gerencie decks salvos e decks de bosses'}</div>
+              </div>
+              <div className="flex items-center gap-3">
+                {!bossEditMode && (
+                  <button
+                    onClick={handleCreateNewDeck}
+                    className="bg-green-600 px-4 py-2 rounded-xl font-bold text-sm hover:bg-green-500"
+                  >
+                    + Novo
+                  </button>
+                )}
+                <button
+                  onClick={() => {
+                    const willEnable = !bossEditMode;
+                    // when toggling mode (entering or exiting), clear any current deck selection/editor state
+                    setBossEditMode(willEnable);
+                    setEditingBossId(null);
+                    setIsCreatingNew(false);
+                    setSelectedDeckId(null);
+                    setDeckCards([]);
+                    setDeckName('');
+                  }}
+                  className={`px-4 py-2 rounded-xl font-bold text-sm ${bossEditMode ? 'bg-amber-600 hover:bg-amber-500' : 'bg-slate-700 hover:bg-slate-600'}`}
+                >
+                  {bossEditMode ? '✖ Sair do Modo Boss' : '✏️ Boss Decks'}
+                </button>
+              </div>
             </div>
 
-            <div className="bg-slate-900/50 rounded-xl p-4 overflow-y-auto flex-1 space-y-3 min-h-0">
-              {customDecks.map(deck => (
-                <div 
-                  key={deck.id}
-                  className={`
-                    p-4 rounded-xl border-2 cursor-pointer transition-all
-                    ${selectedDeckId === deck.id 
-                      ? 'bg-yellow-900/30 border-yellow-500' 
-                      : 'bg-slate-700 border-slate-600 hover:border-slate-500'
-                    }
-                  `}
-                  onClick={() => handleLoadDeck(deck.id)}
-                >
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <div className="font-bold flex items-center gap-2">
-                        {deck.name}
-                        {customDecks[0]?.id === deck.id && (
-                          <span className="ml-2 px-2 py-0.5 rounded-full bg-yellow-500 text-xs text-black font-bold">Padrão</span>
-                        )}
-                      </div>
-                      <div className="text-sm text-slate-400">{deck.cards.length} cartas</div>
-                    </div>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteDeck(deck.id);
-                      }}
-                      className="text-red-400 hover:text-red-300 text-xl"
-                    >
-                      🗑️
-                    </button>
-                  </div>
-                </div>
-              ))}
+            
 
-              {customDecks.length === 0 && (
-                <div className="text-center text-slate-500 py-8">
-                  Nenhum deck criado ainda
-                </div>
+            <div className="bg-slate-900/50 rounded-xl p-4 overflow-y-auto flex-1 space-y-3 min-h-0">
+              {bossEditMode ? (
+                <>
+                  <div className="text-xs text-slate-400 mt-2">Ao selecionar, o deck do boss será carregado no editor. Use "Copiar Array" para exportar.</div>
+
+                  {bosses.map(b => (
+                    <div 
+                      key={b.id}
+                      className={`
+                        p-4 rounded-xl border-2 cursor-pointer transition-all
+                        ${editingBossId === b.id 
+                          ? 'bg-yellow-900/30 border-yellow-500' 
+                          : 'bg-slate-700 border-slate-600 hover:border-slate-500'
+                        }
+                      `}
+                      onClick={() => handleLoadBossDeck(b.id)}
+                    >
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <div className="font-bold flex items-center gap-2">
+                            <span className="text-2xl">{b.avatar || '🎯'}</span>
+                            <span>{b.name}</span>
+                          </div>
+                          <div className="text-sm text-slate-400">{(b.deck || []).length} cartas</div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+
+                  {bosses.length === 0 && (
+                    <div className="text-center text-slate-500 py-8">Nenhum boss disponível</div>
+                  )}
+                </>
+              ) : (
+                <>
+                  {customDecks.map(deck => (
+                    <div 
+                      key={deck.id}
+                      className={`
+                        p-4 rounded-xl border-2 cursor-pointer transition-all
+                        ${selectedDeckId === deck.id 
+                          ? 'bg-yellow-900/30 border-yellow-500' 
+                          : 'bg-slate-700 border-slate-600 hover:border-slate-500'
+                        }
+                      `}
+                      onClick={() => handleLoadDeck(deck.id)}
+                    >
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <div className="font-bold flex items-center gap-2">
+                            {deck.name}
+                            {customDecks[0]?.id === deck.id && (
+                              <span className="ml-2 px-2 py-0.5 rounded-full bg-yellow-500 text-xs text-black font-bold">Padrão</span>
+                            )}
+                          </div>
+                          <div className="text-sm text-slate-400">{deck.cards.length} cartas</div>
+                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteDeck(deck.id);
+                          }}
+                          className="text-red-400 hover:text-red-300 text-xl"
+                        >
+                          🗑️
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+
+                  {customDecks.length === 0 && (
+                    <div className="text-center text-slate-500 py-8">
+                      Nenhum deck criado ainda
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>
@@ -245,19 +346,31 @@ export const DeckBuilderView: React.FC<DeckBuilderViewProps> = ({ onBack, onClos
                 {isCreatingNew || selectedDeckId ? 'Editando Deck' : 'Selecione um deck'}
               </h2>
               {(isCreatingNew || selectedDeckId) && (
-                <button
-                  onClick={handleSaveDeck}
-                  disabled={deckCards.length < MIN_DECK_SIZE || deckCards.length > MAX_DECK_SIZE || !deckName.trim()}
-                  className={`
-                    px-4 py-2 rounded-xl font-bold text-sm transition-all
-                    ${deckCards.length >= MIN_DECK_SIZE && deckCards.length <= MAX_DECK_SIZE && deckName.trim()
-                      ? 'bg-green-600 hover:bg-green-500'
-                      : 'bg-slate-700 text-slate-500 cursor-not-allowed'
-                    }
-                  `}
-                >
-                  💾 Salvar
-                </button>
+                bossEditMode && editingBossId ? (
+                  <div className="flex items-center gap-2">
+                    <div className="text-sm text-slate-400 max-w-40">Copie o array pronto para colar no código do jogo</div>
+                    <button
+                      onClick={handleCopyArray}
+                      className={`px-4 py-2 rounded-xl font-bold text-sm bg-amber-600 hover:bg-amber-500`}
+                    >
+                      📋 Copiar Array
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={handleSaveDeck}
+                    disabled={deckCards.length < MIN_DECK_SIZE || deckCards.length > MAX_DECK_SIZE || !deckName.trim()}
+                    className={`
+                      px-4 py-2 rounded-xl font-bold text-sm transition-all
+                      ${deckCards.length >= MIN_DECK_SIZE && deckCards.length <= MAX_DECK_SIZE && deckName.trim()
+                        ? 'bg-green-600 hover:bg-green-500'
+                        : 'bg-slate-700 text-slate-500 cursor-not-allowed'
+                      }
+                    `}
+                  >
+                    💾 Salvar
+                  </button>
+                )
               )}
             </div>
             {(isCreatingNew || selectedDeckId) && (
