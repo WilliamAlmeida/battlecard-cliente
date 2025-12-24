@@ -115,7 +115,7 @@ export const CardComponent: React.FC<CardProps> = ({ card, compact, isOpponent, 
     ${getRarityGlow(card.rarity)}
     ${isActive ? 'ring-4 ring-white -translate-y-4 z-10' : 'hover:brightness-110'}
     ${canAttack ? 'animate-pulse ring-[3px] sm:ring-4 ring-yellow-400 shadow-[0_0_30px_rgba(250,204,21,0.6)]' : ''}
-    ${compact ? 'w-[110px] h-[155px] md:w-32 md:h-[180px] text-lg p-2 sm:px-3' : 'w-32 h-44 md:w-40 md:h-56 text-lg p-3'}
+    ${compact ? 'w-[110px] h-[155px] md:w-32 md:h-[180px] text-lg p-2 sm:px-3' : 'w-[110px] h-[155px] md:w-32 md:h-[180px] text-lg p-2 sm:px-3'}
     ${animationClass}
     ${activeStatuses.length > 0 ? 'ring-4 ring-red-500' : ''}
   `;
@@ -123,7 +123,7 @@ export const CardComponent: React.FC<CardProps> = ({ card, compact, isOpponent, 
   // Opponent hidden card
   if (isOpponent) {
     return (
-      <div className={`${compact ? 'w-32 h-44 md:w-40 md:h-56' : 'w-32 h-44 md:w-40 md:h-56'} ${animationClass} bg-gradient-to-br from-slate-700 to-slate-900 border-[3px] border-slate-500 rounded-2xl flex flex-col items-center justify-center shadow-2xl relative overflow-hidden group`}>
+      <div className={`${compact ? 'w-[110px] h-[155px] md:w-32 md:h-[180px] text-lg p-2 sm:px-3' : 'w-[110px] h-[155px] md:w-32 md:h-[180px] text-lg p-2 sm:px-3'} ${animationClass} bg-gradient-to-br from-slate-700 to-slate-900 border-[3px] border-slate-500 rounded-2xl flex flex-col items-center justify-center shadow-2xl relative overflow-hidden group`}>
          <div className="w-24 h-24 rounded-full bg-slate-800 flex items-center justify-center border-2 border-slate-600 shadow-inner group-hover:scale-125 transition-transform duration-500">
             <span className="text-6xl filter grayscale opacity-30">⚡</span>
          </div>

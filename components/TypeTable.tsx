@@ -61,7 +61,7 @@ export const TypeTable: React.FC<TypeTableProps> = ({ isOpen: externalOpen, onTo
   };
 
   return (
-    <div className={`fixed right-0 top-[225px] z-[31] transition-all duration-300 ${isOpen ? 'translate-x-0' : 'translate-x-[calc(100%-56px)]'} ${isOpen ? '' : 'pointer-events-none'}`}>
+    <div className={`fixed right-0 top-[175px] sm:top-[215px] z-[34] transition-all duration-300 ${isOpen ? 'translate-x-0' : 'translate-x-[calc(100%-56px)]'} ${isOpen ? '' : 'pointer-events-none'}`}>
       <div className="flex items-start">
         <button onClick={toggle} className="bg-slate-800 border-2 border-r-0 border-white/20 p-4 rounded-l-2xl shadow-2xl hover:bg-slate-700 transition-colors pointer-events-auto" aria-label="Abrir tabela">
           <span className="sm:text-2xl">{isOpen ? '👉' : '📊'}</span>
