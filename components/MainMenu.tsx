@@ -458,7 +458,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({
       </div>
 
         <div className="text-xs text-slate-600 mt-4">
-          Last updated: 23/12/2025 | v1.5.1
+          Last updated: 24/12/2025 | v1.5.4
         </div>
       </div>
     </div>
