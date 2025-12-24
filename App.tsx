@@ -36,7 +36,7 @@ export default function App() {
   const [cardsToSacrifice, setCardsToSacrifice] = useState<string[]>([]);
   const [pendingSummonCardId, setPendingSummonCardId] = useState<string | null>(null);
   const [attackMode, setAttackMode] = useState(false);
-  const [activeSidePanel, setActiveSidePanel] = useState<'log' | 'types' | 'grave' | 'opponent' | null>('log');
+  const [activeSidePanel, setActiveSidePanel] = useState<'log' | 'types' | 'grave' | 'opponent' | null>(null);
   const [selectedDeckId, setSelectedDeckId] = useState<string | null>(null);
   const [lastBossId, setLastBossId] = useState<string | null>(null);
   const [showNeedDeckModal, setShowNeedDeckModal] = useState(false);
