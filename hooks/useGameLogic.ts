@@ -12,6 +12,7 @@ import {
   CardBase,
   generateUniqueId,
   shuffle,
+  buildNpcDeck,
   processStatusEffects,
   applyStatusEffect,
   processAbility,
@@ -193,9 +194,12 @@ export const useGameLogic = () => {
     
     const fullDeck = options?.customDeck || INITIAL_DECK.map(c => ({ ...c }));
     const npDeck = options?.npcDeck || INITIAL_DECK.map(c => ({ ...c }));
-    
+
+    // Ensure NPC deck is trimmed to an appropriate game size (40) respecting rarity distribution
+    const npcDeckForGame = buildNpcDeck(npDeck, 40, diff);
+
     const playerDeck = shuffle(fullDeck).map(c => ({ ...c, uniqueId: generateUniqueId(), hasAttacked: false }));
-    const npcDeckShuffled = shuffle(npDeck).map(c => ({ ...c, uniqueId: generateUniqueId(), hasAttacked: false }));
+    const npcDeckShuffled = npcDeckForGame.map(c => ({ ...c, uniqueId: generateUniqueId(), hasAttacked: false }));
 
     const npcHp = options?.npcHp || 8000;
 
@@ -219,7 +223,8 @@ export const useGameLogic = () => {
     // Ensure we're in survival mode
     setGameMode(GameMode.SURVIVAL);
     const npDeck = options?.npcDeck || INITIAL_DECK.map(c => ({ ...c }));
-    const npcDeckShuffled = shuffle(npDeck).map(c => ({ ...c, uniqueId: generateUniqueId(), hasAttacked: false }));
+    const npcDeckForGame = buildNpcDeck(npDeck, 40, gameStateRef.current.difficulty || difficulty);
+    const npcDeckShuffled = npcDeckForGame.map(c => ({ ...c, uniqueId: generateUniqueId(), hasAttacked: false }));
 
     // Increment wave counter and compute NPC HP (NPC fica mais forte a cada onda)
     const nextWave = (survivalWave || 0) + 1;

@@ -4,3 +4,4 @@ export * from './helpers';
 export * from './statusEffects';
 export * from './abilities';
 export * from './traps';
+export * from './deckBuilder';
