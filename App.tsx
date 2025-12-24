@@ -25,7 +25,8 @@ export default function App() {
   const {
     gameStarted, gameOver, winner, player, npc, turnCount, currentTurnPlayer, phase, logs,
     isAIProcessing, attackingCardId, damagedCardId, floatingDamage, difficulty, gameMode,
-    startGame, setPhase, summonCard, setTrap, useSpell, executeAttack, endTurn, addLog, resetGame
+    startGame, setPhase, summonCard, setTrap, useSpell, executeAttack, endTurn, addLog, resetGame,
+    startNextSurvivalWave
   } = useGameLogic();
 
   const [currentView, setCurrentView] = useState<AppView>('menu');
@@ -637,12 +638,21 @@ export default function App() {
             {winner === 'player' ? 'VITÓRIA!' : 'DERROTA!'}
           </div>
           <div className="flex flex-col sm:flex-row gap-8">
-            <button 
-              onClick={() => handleStartGame(gameMode, difficulty, lastBossId || undefined, selectedDeckId || undefined)} 
-              className="bg-white text-black px-12 py-4 sm:px-24 sm:py-8 rounded-full font-black text-2xl sm:text-4xl hover:scale-110 active:scale-95 transition-all shadow-[0_0_50px_rgba(255,255,255,0.3)]"
-            >
-              🔄 REVANCHE
-            </button>
+            {gameMode === GameMode.SURVIVAL && winner === 'player' ? (
+              <button
+                onClick={() => startNextSurvivalWave()}
+                className="bg-white text-black px-12 py-4 sm:px-24 sm:py-8 rounded-full font-black text-2xl sm:text-4xl hover:scale-110 active:scale-95 transition-all shadow-[0_0_50px_rgba(255,255,255,0.3)]"
+              >
+                ➡️ PRÓXIMO DESAFIO
+              </button>
+            ) : (
+              <button 
+                onClick={() => handleStartGame(gameMode, difficulty, lastBossId || undefined, selectedDeckId || undefined)} 
+                className="bg-white text-black px-12 py-4 sm:px-24 sm:py-8 rounded-full font-black text-2xl sm:text-4xl hover:scale-110 active:scale-95 transition-all shadow-[0_0_50px_rgba(255,255,255,0.3)]"
+              >
+                🔄 REVANCHE
+              </button>
+            )}
             <button 
               onClick={handleBackToMenu} 
               className="bg-slate-700 text-white px-12 py-4 sm:px-24 sm:py-8 rounded-full font-black text-2xl sm:text-4xl hover:scale-110 active:scale-95 transition-all shadow-[0_0_50px_rgba(0,0,0,0.3)]"

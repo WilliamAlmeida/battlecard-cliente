@@ -50,6 +50,9 @@ export const useGameLogic = () => {
   const [cardsDestroyed, setCardsDestroyed] = useState(0);
   const [statusInflicted, setStatusInflicted] = useState<Record<string, number>>({});
 
+  // Survival mode tracking
+  const [survivalWave, setSurvivalWave] = useState<number>(0);
+
   const gameStateRef = useRef({ player, npc, phase, currentTurnPlayer, gameOver, gameStarted, isAnimating, turnCount, starter, difficulty });
 
   useEffect(() => {
@@ -172,6 +175,13 @@ export const useGameLogic = () => {
     
     setDifficulty(diff);
     setGameMode(mode);
+
+    // Initialize survival wave if starting survival
+    if (mode === GameMode.SURVIVAL) {
+      setSurvivalWave(1);
+    } else {
+      setSurvivalWave(0);
+    }
     
     // Configure AI difficulty and sacrifice strategy
     AIController.setDifficulty(diff);
@@ -202,6 +212,44 @@ export const useGameLogic = () => {
     setGameOver(false);
     setWinner(null);
     addLog(starterChoice === 'player' ? "Batalha iniciada! Seu turno." : "Batalha iniciada! CPU começa.");
+  };
+
+  // Start the next wave in Survival mode without resetting the player state
+  const startNextSurvivalWave = (options?: { npcDeck?: CardBase[], npcHp?: number, npcName?: string, npcAvatar?: string }) => {
+    // Ensure we're in survival mode
+    setGameMode(GameMode.SURVIVAL);
+    const npDeck = options?.npcDeck || INITIAL_DECK.map(c => ({ ...c }));
+    const npcDeckShuffled = shuffle(npDeck).map(c => ({ ...c, uniqueId: generateUniqueId(), hasAttacked: false }));
+
+    // Increment wave counter and compute NPC HP (NPC fica mais forte a cada onda)
+    const nextWave = (survivalWave || 0) + 1;
+    setSurvivalWave(nextWave);
+    const npcHp = options?.npcHp || 8000 + Math.max(0, (nextWave - 1)) * 500;
+
+    // Reset player to a fresh battle state but preserve current HP (no regeneration between waves)
+    const playerFullDeck = shuffle(INITIAL_DECK.map(c => ({ ...c }))).map(c => ({ ...c, uniqueId: generateUniqueId(), hasAttacked: false }));
+    const playerHand = playerFullDeck.splice(0, 5);
+    const currentPlayerHp = gameStateRef.current.player?.hp ?? 8000;
+    setPlayer({ id: 'player', name: 'Player', avatar: '👤', hp: currentPlayerHp, hand: playerHand, deck: playerFullDeck, field: [], graveyard: [], trapZone: [] });
+
+    // Configure the new (mais forte) NPC for the next wave
+    setNpc({ id: 'npc', name: options?.npcName || `Oponente Onda ${nextWave}`, avatar: options?.npcAvatar || '👹', hp: npcHp, hand: npcDeckShuffled.splice(0, 5), deck: npcDeckShuffled, field: [], graveyard: [], trapZone: [] });
+
+    // Reset battle state
+    setTurnCount(1);
+    const starterChoice: 'player' | 'npc' = Math.random() < 0.5 ? 'player' : 'npc';
+    setCurrentTurnPlayer(starterChoice);
+    setStarter(starterChoice);
+    setPhase(Phase.MAIN);
+    setLogs([]);
+    setGameStarted(true);
+    setGameOver(false);
+    setWinner(null);
+    // Reset some session stats for the fresh battle
+    setTotalDamageDealt(0);
+    setCardsDestroyed(0);
+    setStatusInflicted({});
+    addLog(starterChoice === 'player' ? "Próxima onda iniciada! Seu turno." : "Próxima onda iniciada! CPU começa.");
   };
 
   useEffect(() => {
@@ -651,11 +699,16 @@ export const useGameLogic = () => {
         mode: gameMode,
         perfect: playerWon && player.hp === 8000
       });
+      // If in Survival and player won, record the wave and prepare next wave number
+      if (gameMode === GameMode.SURVIVAL && playerWon) {
+        const waveToRecord = survivalWave || 1;
+        statsService.recordSurvivalWave(waveToRecord);
+      }
       
       // Check achievements
       achievementsService.checkAchievements();
     }
-  }, [gameOver, winner, totalDamageDealt, cardsDestroyed, turnCount, gameMode, player.hp]);
+  }, [gameOver, winner, totalDamageDealt, cardsDestroyed, turnCount, gameMode, player.hp, survivalWave]);
 
   useEffect(() => {
     if (currentTurnPlayer === 'npc' && !gameOver && gameStarted && !isAnimating) {
@@ -1071,11 +1124,13 @@ export const useGameLogic = () => {
     attackingCardId, damagedCardId, floatingDamage,
     difficulty, gameMode,
     startGame, 
+    survivalWave,
     setPhase, 
     summonCard,
     setTrap,
     useSpell,
     executeAttack,
+    startNextSurvivalWave,
     endTurn: () => {
       setPhase(Phase.DRAW);
       setCurrentTurnPlayer('npc');
