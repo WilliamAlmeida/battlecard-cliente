@@ -4,14 +4,6 @@ import { INITIAL_DECK, SPELL_CARDS, TRAP_CARDS } from '../constants';
 
 const COLLECTION_KEY = 'pokecard_collection';
 
-// const STARTER_CARDS = [
-//   '001', '004', '007', // Starters
-//   '010', '016', '019', // Commons
-//   '025', // Pikachu
-//   'spell_potion', 'spell_pokeball', // Spells básicas
-//   'trap_counter' // Trap básica
-// ];
-
 // Presets de decks iniciais (escolhe 1 aleatoriamente).
 // Preencha cada array até 15 cartas conforme desejar.
 const STARTER_DECKS: string[][] = [
@@ -45,7 +37,7 @@ const PIKACHU_LUCK_FACTOR = 0.3; // 30%
 class CollectionService {
   private collection: PlayerCollection = {
     cards: [],
-    coins: 500,
+    coins: 200,
     packs: 1,
     customDecks: [],
     selectedDeckId: null
@@ -88,7 +80,7 @@ class CollectionService {
         quantity: starterCards.includes(card.id) ? 1 : 0,
         obtained: starterCards.includes(card.id)
       })),
-      coins: 500,
+      coins: 200,
       packs: 1,
       customDecks: [],
       selectedDeckId: null
@@ -197,16 +189,18 @@ class CollectionService {
       obtained.push(card.id);
     }
     
-    // 1 Rare+ (chance de melhor)
+    // 1 Rare+ (2% Legendary, 10% Epic, 25% Rare, otherwise Uncommon)
     const roll = Math.random();
     let rarePool: typeof allCards;
-    
+
     if (roll < 0.02) {
       rarePool = getCardsByRarity(Rarity.LEGENDARY);
     } else if (roll < 0.12) {
       rarePool = getCardsByRarity(Rarity.EPIC);
-    } else {
+    } else if (roll < 0.37) { // 0.12 + 0.25 = 0.37
       rarePool = getCardsByRarity(Rarity.RARE);
+    } else {
+      rarePool = getCardsByRarity(Rarity.UNCOMMON);
     }
     
     if (rarePool.length > 0) {
