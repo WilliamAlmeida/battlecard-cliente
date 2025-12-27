@@ -7,9 +7,9 @@ export const GameRules = {
   MAX_HP: 8000,
 
   canSummon: (player: Player, card: Card): boolean => {
-    // Contar apenas cartas válidas para sacrifício (exclui cartas do tipo POKEMON)
-    const validInHand = player.hand.filter(c => c.cardType !== CardType.POKEMON && c.uniqueId !== card.uniqueId).length;
-    const validOnField = player.field.filter(c => c.cardType !== CardType.POKEMON).length;
+    // Contar cartas válidas para sacrifício (todas exceto a própria carta que será invocada)
+    const validInHand = player.hand.filter(c => c.uniqueId !== card.uniqueId).length;
+    const validOnField = player.field.filter(c => c.uniqueId !== card.uniqueId).length;
     const availableSacrifices = validInHand + validOnField;
 
     // Se não há sacrifícios suficientes, não é possível invocar
