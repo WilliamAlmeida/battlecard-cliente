@@ -33,9 +33,6 @@ export const MainMenu: React.FC<MainMenuProps> = ({
   const [showSurvival, setShowSurvival] = useState(false);
   const [deckSelectorOpen, setDeckSelectorOpen] = useState(false);
   const [showDailyTimeline, setShowDailyTimeline] = useState(false);
-  const [dailyRevealOpen, setDailyRevealOpen] = useState(false);
-  const [isFlipped, setIsFlipped] = useState(false);
-  const [showConfetti, setShowConfetti] = useState(false);
 
   const stats = statsService.getStats();
   const collection = collectionService.getCollection();
@@ -84,34 +81,14 @@ export const MainMenu: React.FC<MainMenuProps> = ({
     setDailyRewardPreview(null);
   }, []);
 
-  const handleClaimDaily = () => {
-    if (!dailyRewardService.isClaimAvailable()) {
-      soundService.playError();
-      setDailyAvailable(false);
-      return;
-    }
-
-    const reward = dailyRewardService.claim();
-    if (reward) {
-      soundService.playAchievement();
-      setDailyAvailable(false);
-      setDailyRewardPreview(reward);
-      // open reveal modal with flip/confetti
-      setDailyRevealOpen(true);
-      setIsFlipped(false);
-      // small delay then flip
-      setTimeout(() => setIsFlipped(true), 150);
-      // show confetti shortly after
-      setTimeout(() => setShowConfetti(true), 500);
-      setTimeout(() => setShowConfetti(false), 2200);
-    } else {
-      soundService.playError();
-    }
-  };
-
-  const handleTimelineRefresh = () => {
+  const handleTimelineRefresh = (reward?: any) => {
     setDailyAvailable(dailyRewardService.isClaimAvailable());
-    setDailyRewardPreview(dailyRewardService.getPendingReward());
+    if (reward) {
+      // Update preview/state but DO NOT open the reveal modal — timeline shows the visual
+      setDailyRewardPreview(reward);
+    } else {
+      setDailyRewardPreview(dailyRewardService.getPendingReward());
+    }
   };
 
   // Deck selector component (reusable) - compact view + overlay
@@ -425,7 +402,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({
 
       {/* Daily Reward */}
       <div className="w-full flex justify-center mb-6">
-        <div className="bg-slate-800 p-4 rounded-2xl mb-6 flex flex-col items-center gap-y-4 justify-between w-full max-w-4xl">
+        <div className="bg-slate-800 p-4 rounded-2xl mb-6 flex flex-col sm:flex-row gap-y-3 items-center justify-between w-full max-w-4xl">
           <div>
             <div className="text-lg font-bold">🎁 Recompensa Diária</div>
             <div className="text-sm text-slate-400">
@@ -437,17 +414,9 @@ export const MainMenu: React.FC<MainMenuProps> = ({
               onClick={() => { soundService.playClick(); setShowDailyTimeline(true); }}
               className="px-3 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-sm text-slate-200"
             >
-              📅 Ver Timeline
+              📅 Ver Linha do Tempo
             </button>
-            {dailyAvailable && (
-              <button
-                onClick={handleClaimDaily}
-                disabled={!dailyAvailable}
-                className={`px-3 py-2 text-sm rounded-xl font-bold ${dailyAvailable ? 'bg-green-600 hover:bg-green-500 text-black' : 'bg-slate-700 text-slate-500 cursor-not-allowed'}`}
-              >
-                🎯 Reivindicar
-              </button>
-            )}
+            {/* Claiming is handled inside the Timeline now */}
           </div>
         </div>
       </div>
@@ -460,72 +429,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({
         />
       )}
 
-      {/* Reveal modal with flip + confetti */}
-      {dailyRevealOpen && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center p-6">
-          <div className="absolute inset-0 bg-black/70" onClick={() => { setDailyRevealOpen(false); setIsFlipped(false); }} />
-          <div className="relative z-70 flex flex-col items-center">
-            <style>{`
-              .reveal-scene { perspective: 1000px; }
-              .reveal-card { width: 320px; height: 200px; position: relative; transform-style: preserve-3d; transition: transform 0.8s; }
-              .reveal-card.flipped { transform: rotateY(180deg); }
-              .reveal-face { position: absolute; inset: 0; backface-visibility: hidden; display:flex; align-items:center; justify-content:center; flex-direction:column; border-radius:12px; }
-              .reveal-front { background: linear-gradient(180deg,#1f2937,#111827); color:#fff; }
-              .reveal-back { background: linear-gradient(180deg,#fef3c7,#fde68a); color:#111; transform: rotateY(180deg); }
-              @keyframes confetti { 0% { transform: translateY(-10px) rotate(0deg); opacity:1 } 100% { transform: translateY(300px) rotate(360deg); opacity:0 } }
-              .confetti-piece { position:absolute; top:0; width:10px; height:16px; opacity:0; }
-            `}</style>
-
-            <div className="reveal-scene mb-4">
-              <div className={`reveal-card ${isFlipped ? 'flipped' : ''}`}>
-                <div className="reveal-face reveal-front p-4">
-                  <div className="text-6xl">🧰</div>
-                  <div className="mt-3 font-bold">Recompensa Diária</div>
-                  <div className="text-sm text-slate-400 mt-2">Clique para revelar</div>
-                </div>
-                <div className="reveal-face reveal-back p-6">
-                  <div className="text-4xl">🎉</div>
-                  <div className="mt-2 text-xl font-black">{dailyRewardPreview?.title || 'Recompensa'}</div>
-                  <div className="mt-3 text-lg">
-                    {dailyRewardPreview?.coins ? <span className="mr-2">💰 {dailyRewardPreview.coins}</span> : null}
-                    {dailyRewardPreview?.packs ? <span className="mr-2">📦 {dailyRewardPreview.packs}</span> : null}
-                  </div>
-                  {dailyRewardPreview?.cards && dailyRewardPreview.cards.length > 0 && (
-                    <div className="mt-3 text-sm">Cartas: {dailyRewardPreview.cards.join(', ')}</div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <div className="flex gap-3">
-              <button
-                onClick={() => { setIsFlipped(f => !f); soundService.playClick(); }}
-                className="px-4 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white"
-              >
-                Virar
-              </button>
-              <button
-                onClick={() => { setDailyRevealOpen(false); setIsFlipped(false); soundService.playClick(); }}
-                className="px-4 py-2 rounded-lg bg-yellow-600 hover:bg-yellow-500 font-bold"
-              >
-                Fechar
-              </button>
-            </div>
-
-            {showConfetti && (
-              <>
-                {Array.from({ length: 14 }).map((_, i) => (
-                  <div
-                    key={i}
-                    className="confetti-piece"
-                    style={{ left: `${10 + i * 6}%`, background: i % 2 === 0 ? '#f97316' : '#60a5fa', animation: `confetti 1.8s ${i * 40}ms linear forwards` }}
-                  />
-                ))}
-              </>
-            )}
-          </div>
-        </div>
-      )}
+      {/* Reveal modal removed — timeline displays the reward visual */}
 
       {/* Modos de Jogo */}
       <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6 mb-12 max-w-4xl">

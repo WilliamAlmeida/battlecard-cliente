@@ -31,7 +31,7 @@ const DAILY_SCHEDULE: DailyReward[] = [
   { day: 4, coins: 250, packs: 0, title: 'Dia 4' },
   { day: 5, coins: 300, packs: 1, title: 'Pacote e moedas' },
   { day: 6, coins: 500, packs: 1, title: 'Recompensa grande' },
-  { day: 7, coins: 800, packs: 2, cards: ['030'], title: 'Mega Dia 7' }, // Nidorina (2-star)
+  { day: 7, coins: 800, packs: 2, cards: ['133'], title: 'Mega Dia 7' }, // Eevee (1-star)
 
   { day: 8, coins: 100, packs: 0, title: 'Semana 2 - Dia 1' },
   { day: 9, coins: 150, packs: 0, title: 'Semana 2 - Dia 2' },
@@ -39,7 +39,7 @@ const DAILY_SCHEDULE: DailyReward[] = [
   { day: 11, coins: 250, packs: 0, title: 'Semana 2 - Dia 4' },
   { day: 12, coins: 300, packs: 1, title: 'Semana 2 - Pacote e moedas' },
   { day: 13, coins: 500, packs: 1, title: 'Semana 2 - Recompensa grande' },
-  { day: 14, coins: 800, packs: 2, cards: ['005'], title: 'Semana 2 - Mega Dia' }, // Charmeleon (2-star)
+  { day: 14, coins: 800, packs: 2, cards: ['025'], title: 'Semana 2 - Mega Dia' }, // Picachu (2-star)
 
   { day: 15, coins: 100, packs: 0, title: 'Semana 3 - Dia 1' },
   { day: 16, coins: 150, packs: 0, title: 'Semana 3 - Dia 2' },
@@ -55,11 +55,11 @@ const DAILY_SCHEDULE: DailyReward[] = [
   { day: 25, coins: 250, packs: 0, title: 'Semana 4 - Dia 4' },
   { day: 26, coins: 300, packs: 1, title: 'Semana 4 - Pacote e moedas' },
   { day: 27, coins: 500, packs: 1, title: 'Semana 4 - Recompensa grande' },
-  { day: 28, coins: 800, packs: 2, cards: ['026'], title: 'Semana 4 - Mega Dia' }, // Raichu (2-star)
+  { day: 28, coins: 800, packs: 2, title: 'Semana 4 - Mega Dia' },
 
   { day: 29, coins: 800, packs: 0, title: 'Quase lá!' },
   // Day 30: special 3-star card (non-epic, non-legendary). Using 003 (Venusaur) as a safe 3-star.
-  { day: 30, coins: 1000, packs: 2, cards: ['003'], title: 'Dia 30 - Grande Recompensa' }
+  { day: 30, coins: 0, packs: 0, cards: ['003'], title: 'Dia 30 - Grande Recompensa' }
 ];
 
 class DailyRewardService {

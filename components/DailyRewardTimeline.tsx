@@ -7,7 +7,7 @@ import { CardComponent } from './CardComponent';
 
 interface DailyRewardTimelineProps {
   onClose: () => void;
-  onClaim: () => void;
+  onClaim: (reward?: DailyReward | null) => void;
 }
 
 export const DailyRewardTimeline: React.FC<DailyRewardTimelineProps> = ({ onClose, onClaim }) => {
@@ -23,10 +23,8 @@ export const DailyRewardTimeline: React.FC<DailyRewardTimelineProps> = ({ onClos
     const reward = dailyRewardService.testClaim();
     if (reward) {
       soundService.playAchievement();
-      // Force refresh by calling parent
-      onClaim();
-      // Also force re-render by updating local state
-      window.location.reload(); // Quick way to refresh all state
+      // Notify parent with the claimed reward
+      onClaim(reward);
     }
   };
 
@@ -108,9 +106,20 @@ export const DailyRewardTimeline: React.FC<DailyRewardTimelineProps> = ({ onClos
               return (
                 <div
                   key={day}
+                  onClick={() => {
+                    if (state === 'available' && day === pendingDay && dailyAvailable) {
+                      const reward = dailyRewardService.claim();
+                      if (reward) {
+                        soundService.playAchievement();
+                        onClaim(reward);
+                      } else {
+                        soundService.playError();
+                      }
+                    }
+                  }}
                   className={`
                     flex flex-col items-center gap-4 transition-all relative
-                    ${state === 'available' ? 'scale-110 z-10' : ''}
+                    ${state === 'available' ? 'scale-110 z-10 cursor-pointer' : ''}
                   `}
                 >
                   {/* Connection Line */}
@@ -161,12 +170,12 @@ export const DailyRewardTimeline: React.FC<DailyRewardTimelineProps> = ({ onClos
                       )}
 
                       {/* Card Display */}
-                      {hasCard && rewardForDay.cards ? (
+                      {hasCard && rewardForDay.cards.length > 0 ? (
                         <div className="scale-95 transform hover:scale-100 transition-transform">
                           {rewardForDay.cards.map(cardId => {
                             const card = getCardById(cardId);
                             return card ? (
-                              <CardComponent key={cardId} card={card} compact={false} showDetails={true} />
+                              <CardComponent key={cardId} card={card} compact showDetails={true} />
                             ) : (
                               <div key={cardId} className="text-6xl">🎴</div>
                             );
@@ -175,13 +184,13 @@ export const DailyRewardTimeline: React.FC<DailyRewardTimelineProps> = ({ onClos
                       ) : (
                         /* Coins/Packs Display */
                         <div className="flex flex-col gap-4 items-center">
-                          {rewardForDay?.coins && (
+                          {rewardForDay?.coins > 0 && (
                             <div className="flex items-center gap-3 text-3xl bg-slate-900/50 px-4 py-2 rounded-xl">
                               <span>💰</span>
                               <span className="font-bold text-yellow-400">{rewardForDay.coins}</span>
                             </div>
                           )}
-                          {rewardForDay?.packs && (
+                          {rewardForDay?.packs > 0 && (
                             <div className="flex items-center gap-3 text-3xl bg-slate-900/50 px-4 py-2 rounded-xl">
                               <span>📦</span>
                               <span className="font-bold text-blue-400">{rewardForDay.packs}</span>
@@ -205,28 +214,6 @@ export const DailyRewardTimeline: React.FC<DailyRewardTimelineProps> = ({ onClos
                 </div>
               );
             })}
-          </div>
-        </div>
-
-        {/* Footer Info */}
-        <div className="bg-slate-800/50 rounded-xl p-4 mt-4">
-          <div className="flex justify-center gap-6 text-sm">
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded-full bg-green-600"></div>
-              <span className="text-slate-300">Reivindicado</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded-full bg-yellow-500"></div>
-              <span className="text-slate-300">Disponível</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded-full bg-slate-600"></div>
-              <span className="text-slate-300">Em breve</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded-full bg-indigo-600 ring-2 ring-indigo-400"></div>
-              <span className="text-slate-300">Dia 30 Especial</span>
-            </div>
           </div>
         </div>
       </div>
