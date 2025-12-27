@@ -202,8 +202,10 @@ export const DeckBuilderView: React.FC<DeckBuilderViewProps> = ({ onBack, onClos
   };
 
   const handleAddCard = (cardId: string) => {
+    const owned = collectionService.getCardQuantity(cardId);
     const cardCount = deckCards.filter(c => c === cardId).length;
-    if (cardCount >= 3) {
+    const maxAllowed = Math.min(3, owned);
+    if (cardCount >= maxAllowed) {
       soundService.playError();
       return;
     }
@@ -575,7 +577,9 @@ export const DeckBuilderView: React.FC<DeckBuilderViewProps> = ({ onBack, onClos
               <div className={`grid grid-cols-2 sm:grid-cols-3 gap-2 ${(isCreatingNew || selectedDeckId) ? '' : 'sm:grid-cols-4'}`}>
                 {sortedAvailableCards.map(card => {
                   const inDeckCount = deckCards.filter(c => c === card.id).length;
-                  const canAdd = inDeckCount < 3 && (isCreatingNew || selectedDeckId);
+                  const owned = collectionService.getCardQuantity(card.id);
+                  const maxAllowed = Math.min(3, owned);
+                  const canAdd = inDeckCount < maxAllowed && (isCreatingNew || selectedDeckId);
                   
                   return (
                     <div
@@ -583,6 +587,12 @@ export const DeckBuilderView: React.FC<DeckBuilderViewProps> = ({ onBack, onClos
                       onClick={() => canAdd && handleAddCard(card.id)}
                       className={`p-3 rounded-xl border-2 transition-all relative ${getRarityColor(card.rarity)} ${canAdd ? 'cursor-pointer hover:scale-105' : 'opacity-50 cursor-not-allowed'}`}
                     >
+                      {owned > 1 && (
+                        <div className="absolute -top-2 -left-2 bg-slate-700 text-white w-6 h-6 rounded-full flex items-center justify-center font-bold text-sm">
+                          {owned}
+                        </div>
+                      )}
+
                       {inDeckCount > 0 && (
                         <div className="absolute -top-2 -right-2 bg-blue-500 text-white w-6 h-6 rounded-full flex items-center justify-center font-bold text-sm">
                           {inDeckCount}
