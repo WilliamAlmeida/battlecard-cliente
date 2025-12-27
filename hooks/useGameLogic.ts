@@ -576,7 +576,7 @@ export const useGameLogic = () => {
                   fn(p => ({ ...p, hp: Math.min(8000, p.hp + destroyAbilityResult.healOwner!) }));
                 }
 
-                // Apply revive (remove from graveyard and add to field/hand)
+                // Apply revive (remove from graveyard and add to hand)
                 if (destroyAbilityResult.reviveCard) {
                   const fn = isPlayer ? setNpc : setPlayer;
                   setTimeout(() => {
@@ -589,21 +589,13 @@ export const useGameLogic = () => {
                         newGrave.push(g);
                       }
 
-                      if (p.field.length < 3) {
-                        return {
-                          ...p,
-                          field: [...p.field, destroyAbilityResult.reviveCard!],
-                          graveyard: newGrave
-                        };
-                      }
-
                       return {
                         ...p,
                         hand: [...p.hand, destroyAbilityResult.reviveCard!],
                         graveyard: newGrave
                       };
                     });
-                    addLog(`${defender.name} renasceu no campo!`, 'effect');
+                    addLog(`${destroyAbilityResult.reviveCard!.name} renasceu na mão!`, 'effect');
                   }, 500);
                 }
               }
@@ -1080,45 +1072,22 @@ export const useGameLogic = () => {
           ? { ...toRevive, hasAttacked: false }
           : { ...toRevive, attack: Math.floor(toRevive.attack / 2), hasAttacked: false };
 
-        // Only Pokémons may be placed on the field. Other card types go to the hand.
-        if (toRevive.cardType === CardType.POKEMON && state.field.length < 3) {
-          const revivedId = toRevive.uniqueId;
-          setFn(p => {
-            // remove only the first matching entry by uniqueId to avoid race conditions
-            const newGrave: typeof p.graveyard = [];
-            let removed = false;
-            for (const g of p.graveyard) {
-              if (!removed && g.uniqueId === revivedId) { removed = true; continue; }
-              newGrave.push(g);
-            }
-            return {
-              ...p,
-              field: [...p.field, revivedCard],
-              graveyard: newGrave
-            };
-          });
-          addLog(`${ownerName} reviveu ${toRevive.name} para o campo!`, 'effect');
-        } else {
-          const revivedId = toRevive.uniqueId;
-          setFn(p => {
-            const newGrave: typeof p.graveyard = [];
-            let removed = false;
-            for (const g of p.graveyard) {
-              if (!removed && g.uniqueId === revivedId) { removed = true; continue; }
-              newGrave.push(g);
-            }
-            return {
-              ...p,
-              hand: [...p.hand, revivedCard],
-              graveyard: newGrave
-            };
-          });
-          if (toRevive.cardType !== CardType.POKEMON) {
-            addLog(`${ownerName} reviveu ${toRevive.name}, mas não é Pokémon — foi para a mão!`, 'effect');
-          } else {
-            addLog(`${ownerName} não tinha espaço no campo — ${toRevive.name} foi para a mão!`, 'effect');
+        const revivedId = toRevive.uniqueId;
+        setFn(p => {
+          // remove only the first matching entry by uniqueId to avoid race conditions
+          const newGrave: typeof p.graveyard = [];
+          let removed = false;
+          for (const g of p.graveyard) {
+            if (!removed && g.uniqueId === revivedId) { removed = true; continue; }
+            newGrave.push(g);
           }
-        }
+          return {
+            ...p,
+            hand: [...p.hand, revivedCard],
+            graveyard: newGrave
+          };
+        });
+        addLog(`${ownerName} reviveu ${toRevive.name} para a mão!`, 'effect');
       }
     }
   }, [addLog]);
