@@ -11,22 +11,11 @@ interface DailyRewardTimelineProps {
 }
 
 export const DailyRewardTimeline: React.FC<DailyRewardTimelineProps> = ({ onClose, onClaim }) => {
-  const [testMode, setTestMode] = useState(false);
+  
   const pending = dailyRewardService.getPendingReward();
   const pendingDay = pending?.day ?? 1;
   const claimedCount = Math.max(0, pendingDay - 1);
   const dailyAvailable = dailyRewardService.isClaimAvailable();
-
-  const handleTestNext = () => {
-    soundService.playClick();
-    // Force claim for testing (bypasses date check)
-    const reward = dailyRewardService.testClaim();
-    if (reward) {
-      soundService.playAchievement();
-      // Notify parent with the claimed reward
-      onClaim(reward);
-    }
-  };
 
   const getCardById = (cardId: string): Card | null => {
     const rawCard = GEN1_RAW.find(c => c.id === cardId);
@@ -60,12 +49,6 @@ export const DailyRewardTimeline: React.FC<DailyRewardTimelineProps> = ({ onClos
           </div>
           <div className="flex gap-3">
             <button
-              onClick={() => setTestMode(!testMode)}
-              className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 font-bold"
-            >
-              {testMode ? '🧪 Modo Teste: ON' : '🧪 Modo Teste'}
-            </button>
-            <button
               onClick={() => { soundService.playClick(); onClose(); }}
               className="px-6 py-3 rounded-xl bg-slate-700 hover:bg-slate-600 font-bold"
             >
@@ -73,22 +56,6 @@ export const DailyRewardTimeline: React.FC<DailyRewardTimelineProps> = ({ onClos
             </button>
           </div>
         </div>
-
-        {/* Test Mode Panel */}
-        {testMode && (
-          <div className="bg-purple-900/30 border-2 border-purple-500 rounded-xl p-4 mb-4 flex items-center justify-between">
-            <div>
-              <div className="font-bold text-purple-300">🧪 Modo de Teste Ativado</div>
-              <div className="text-sm text-purple-400">Clique no botão para avançar para o próximo dia</div>
-            </div>
-            <button
-              onClick={handleTestNext}
-              className="px-6 py-3 rounded-xl bg-purple-600 hover:bg-purple-500 font-bold"
-            >
-              ⏭️ Próximo Dia
-            </button>
-          </div>
-        )}
 
         {/* Timeline Horizontal */}
         <div className="flex-1 overflow-x-auto overflow-y-hidden pb-4">
