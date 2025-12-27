@@ -4,6 +4,7 @@ import { statsService } from '../services/statsService';
 import { collectionService } from '../services/collectionService';
 import { campaignService } from '../services/campaignService';
 import { achievementsService } from '../services/achievementsService';
+import { dailyRewardService } from '../services/dailyRewardService';
 import { soundService } from '../services/soundService';
 
 interface MainMenuProps {
@@ -36,6 +37,8 @@ export const MainMenu: React.FC<MainMenuProps> = ({
   const campaignProgress = campaignService.getProgress();
   const achievementCount = achievementsService.getUnlockedCount();
   const totalAchievements = achievementsService.getTotalCount();
+  const [dailyAvailable, setDailyAvailable] = useState<boolean>(false);
+  const [dailyRewardPreview, setDailyRewardPreview] = useState<any>(null);
 
   const handleModeSelect = (mode: GameMode) => {
     soundService.playClick();
@@ -69,6 +72,31 @@ export const MainMenu: React.FC<MainMenuProps> = ({
   const handleStartDraft = () => {
     soundService.playSummon();
     onStartGame(GameMode.DRAFT, difficulty, undefined, selectedDeckId || undefined);
+  };
+
+  useEffect(() => {
+    setDailyAvailable(dailyRewardService.isClaimAvailable());
+    setDailyRewardPreview(dailyRewardService.getPendingReward());
+  }, []);
+
+  const handleClaimDaily = () => {
+    if (!dailyRewardService.isClaimAvailable()) {
+      soundService.playError();
+      setDailyAvailable(false);
+      return;
+    }
+
+    const reward = dailyRewardService.claim();
+    if (reward) {
+      soundService.playAchievement();
+      setDailyAvailable(false);
+      setDailyRewardPreview(reward);
+      // refresh some local displays (collection counts)
+      // Since this component reads collectionService.getCollection() only once above,
+      // we don't have a setter for it here; but other parts of the UI will read fresh values.
+    } else {
+      soundService.playError();
+    }
   };
 
   // Deck selector component (reusable) - compact view + overlay
@@ -372,6 +400,32 @@ export const MainMenu: React.FC<MainMenuProps> = ({
         <div className="bg-slate-800/50 px-6 py-3 rounded-xl text-center">
           <div className="text-2xl font-bold text-purple-400">{achievementCount}/{totalAchievements}</div>
           <div className="text-xs text-slate-500 uppercase">Conquistas</div>
+        </div>
+      </div>
+
+      {/* Daily Reward */}
+      <div className="w-full flex justify-center mb-6">
+        <div className="bg-slate-800 p-4 rounded-2xl mb-6 flex items-center justify-between w-full max-w-4xl">
+          <div>
+            <div className="text-lg font-bold">🎁 Recompensa Diária</div>
+            <div className="text-sm text-slate-400">
+              {dailyAvailable ? `Disponível: ${dailyRewardPreview?.title || 'Reivindique agora'}` : 'Já reivindicado hoje'}
+            </div>
+            <div className="text-sm text-yellow-400 mt-1">
+              {dailyRewardPreview?.coins ? `💰 ${dailyRewardPreview.coins}` : ''}
+              {dailyRewardPreview?.packs ? ` ${dailyRewardPreview.coins ? ' | ' : ''}📦 ${dailyRewardPreview.packs}` : ''}
+              {dailyRewardPreview?.cards && dailyRewardPreview.cards.length > 0 ? ` ${dailyRewardPreview.packs || dailyRewardPreview.coins ? '|' : ''} 🎴 ${dailyRewardPreview.cards.join(',')}` : ''}
+            </div>
+          </div>
+          <div>
+            <button
+              onClick={handleClaimDaily}
+              disabled={!dailyAvailable}
+              className={`px-6 py-3 rounded-xl font-bold ${dailyAvailable ? 'bg-yellow-600 hover:bg-yellow-500 text-black' : 'bg-slate-700 text-slate-500 cursor-not-allowed'}`}
+            >
+              Reivindicar
+            </button>
+          </div>
         </div>
       </div>
 
