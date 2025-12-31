@@ -610,7 +610,7 @@ export default function App() {
       <footer className="bg-slate-950 p-2 sm:p-5 border-t-8 border-white/5 z-30 shadow-[0_-30px_60px_rgba(0,0,0,0.6)] min-h-[400px]">
          <div className="flex justify-between items-center w-fit mb-2">
             <div className="flex gap-2">
-               <div className="flex flex-col items-center justify-center bg-slate-900/50 min-h-[48px] px-2 sm:p-4 rounded-lg sm:rounded-3xl border border-white/5">
+               <div className="flex flex-col items-center justify-center bg-slate-900/50 min-h-[48px] sm:min-h-[92px] min-w-[170px] px-2 sm:p-4 rounded-lg sm:rounded-3xl border border-white/5">
                   <span className="text-xs font-black uppercase tracking-[0.3em] text-slate-500">Fase Atual</span>
                   <span className="text-sm sm:text-lg font-black uppercase text-yellow-500 drop-shadow-md">{phase} PHASE</span>
                </div>
