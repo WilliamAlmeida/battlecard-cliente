@@ -500,7 +500,7 @@ export default function App() {
         </div>
 
         {/* Linha de Combate */}
-        <div className="w-full h-1 bg-white/5 flex items-center justify-center relative z-10">
+        <div className="w-full h-1 bg-white/5 flex items-center justify-center relative z-[11]">
            {attackMode && phase === Phase.BATTLE && npc.field.length === 0 && player.field.some(c => c.uniqueId === selectedCardId) && (
              <button onClick={handleDirectAttack} className="bg-gradient-to-r from-red-600 to-orange-600 px-8 py-3 sm:px-16 sm:py-6 rounded-full font-black sm:text-3xl animate-bounce shadow-[0_0_80px_rgba(220,38,38,0.7)] border-4 border-white transition-all hover:scale-110 active:scale-90">⚔️ ATAQUE DIRETO!</button>
            )}
