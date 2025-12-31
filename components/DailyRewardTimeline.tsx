@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { dailyRewardService, DailyReward } from '../services/dailyRewardService';
 import { soundService } from '../services/soundService';
 import { GEN1_RAW } from '../pokemons/gen1';
@@ -16,6 +16,9 @@ export const DailyRewardTimeline: React.FC<DailyRewardTimelineProps> = ({ onClos
   const pendingDay = pending?.day ?? 1;
   const claimedCount = Math.max(0, pendingDay - 1);
   const dailyAvailable = dailyRewardService.isClaimAvailable();
+
+  const timelineContainerRef = useRef<HTMLDivElement | null>(null);
+  useCenterPendingDay(timelineContainerRef, pendingDay);
 
   const getCardById = (cardId: string): Card | null => {
     const rawCard = GEN1_RAW.find(c => c.id === cardId);
@@ -58,7 +61,7 @@ export const DailyRewardTimeline: React.FC<DailyRewardTimelineProps> = ({ onClos
         </div>
 
         {/* Timeline Horizontal */}
-        <div className="flex-1 overflow-x-auto overflow-y-hidden pb-4">
+        <div ref={timelineContainerRef} className="flex-1 overflow-x-auto overflow-y-hidden pb-4">
           <div className="flex gap-8 h-full items-center px-8 py-4" style={{ minWidth: 'max-content' }}>
             {Array.from({ length: 30 }, (_, i) => {
               const day = i + 1;
@@ -72,6 +75,7 @@ export const DailyRewardTimeline: React.FC<DailyRewardTimelineProps> = ({ onClos
 
               return (
                 <div
+                  data-day={day}
                   key={day}
                   onClick={() => {
                     if (state === 'available' && day === pendingDay && dailyAvailable) {
@@ -187,3 +191,29 @@ export const DailyRewardTimeline: React.FC<DailyRewardTimelineProps> = ({ onClos
     </div>
   );
 };
+
+// Auto-center the pending day inside the horizontally scrollable container
+// when the component mounts or when `pendingDay` changes.
+// Uses getBoundingClientRect to compute a centered scroll position.
+function useCenterPendingDay(containerRef: React.RefObject<HTMLDivElement>, pendingDay: number) {
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    // Find the element for the pending day inside the scroll container
+    const target = container.querySelector(`[data-day="${pendingDay}"]`) as HTMLElement | null;
+    if (!target) return;
+
+    const containerRect = container.getBoundingClientRect();
+    const targetRect = target.getBoundingClientRect();
+
+    const scrollLeft = targetRect.left - containerRect.left + container.scrollLeft - (container.clientWidth - targetRect.width) / 2;
+
+    container.scrollTo({ left: Math.max(0, Math.round(scrollLeft)), behavior: 'smooth' });
+  }, [containerRef, pendingDay]);
+}
+
+// Hook usage inside the file's default export scope
+// (We call this from the component body so it runs with access to pendingDay)
+// NOTE: This is intentionally outside the component to keep the effect helper
+// separate; the component below calls it implicitly via placement.
