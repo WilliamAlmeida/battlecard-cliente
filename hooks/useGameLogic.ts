@@ -6,6 +6,7 @@ import { AIController } from '../classes/AIController';
 import { soundService } from '../services/soundService';
 import { statsService } from '../services/statsService';
 import { achievementsService } from '../services/achievementsService';
+import { collectionService } from '../services/collectionService';
 
 // Import refactored modules
 import {
@@ -714,6 +715,31 @@ export const useGameLogic = () => {
       
       // Check achievements
       achievementsService.checkAchievements();
+
+      // Award quick-battle coins to the player based on difficulty
+      if (gameMode === GameMode.QUICK_BATTLE && playerWon) {
+        let min = 0;
+        let max = 0;
+        switch (difficulty) {
+          case AIDifficulty.EASY:
+            min = 5; max = 10; break;
+          case AIDifficulty.NORMAL:
+            min = 7; max = 15; break;
+          case AIDifficulty.HARD:
+            min = 10; max = 15; break;
+          case AIDifficulty.EXPERT:
+            min = 10; max = 15; break;
+          default:
+            min = 7; max = 12; break;
+        }
+        const amount = Math.floor(Math.random() * (max - min + 1)) + min;
+        try {
+          collectionService.addCoins(amount);
+          addLog(`Você ganhou ${amount} moedas por vencer a Batalha Rápida (${difficulty})`, 'info');
+        } catch (e) {
+          console.warn('Falha ao adicionar coins da Batalha Rápida', e);
+        }
+      }
     }
   }, [gameOver, winner, totalDamageDealt, cardsDestroyed, turnCount, gameMode, player.hp, survivalWave]);
 
