@@ -246,7 +246,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({
                   `}
                 >
                   {!category.unlocked && (
-                    <div className="absolute inset-0 flex items-center justify-center z-10">
+                    <div className="absolute inset-0 flex items-start justify-end pt-2 z-10">
                       <span className="text-8xl">🔒</span>
                     </div>
                   )}
