@@ -498,7 +498,7 @@ export const PvPGameBoard: React.FC<PvPGameBoardProps> = ({ onGameEnd }) => {
 
       {/* Battle Log (uses shared BattleLog component) */}
       <BattleLog
-        logs={gameState.gameLog}
+        logs={[...gameState.gameLog].reverse()}
         isOpen={showBattleLog}
         onToggle={() => setShowBattleLog(v => !v)}
       />
