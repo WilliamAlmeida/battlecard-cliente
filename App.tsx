@@ -219,27 +219,35 @@ export default function App() {
         return;
       }
 
-      // Verificar limite de campo — bloquear apenas se não houver sacrifício que libere espaço
-      if (card.sacrificeRequired === 0 && player.field.length >= GameRules.MAX_FIELD_SIZE) {
-        addLog(`CAMPO CHEIO! Você não pode ter mais de ${GameRules.MAX_FIELD_SIZE} Pokémon simultâneos.`);
-        return;
-      }
-
-      if (card.sacrificeRequired === 0) {
-        summonCard('player', card.uniqueId, []);
-      } else {
-        // Contar pokémons disponíveis para sacrificar (mão + campo), exceto a carta sendo invocada
-        const pokemonsInHand = player.hand.filter(c => c.cardType === 'POKEMON' && c.uniqueId !== card.uniqueId).length;
-        const availableTotal = pokemonsInHand + player.field.length;
-        if (availableTotal < card.sacrificeRequired) {
-          addLog(`Sacrifícios insuficientes! ${card.name} exige ${card.sacrificeRequired} Pokémon entre mão e campo.`);
+      // Handle POKEMON cards - select first, then show summon button
+      if (card.cardType === 'POKEMON') {
+        // Verificar limite de campo — bloquear apenas se não houver sacrifício que libere espaço
+        if (card.sacrificeRequired === 0 && player.field.length >= GameRules.MAX_FIELD_SIZE) {
+          addLog(`CAMPO CHEIO! Você não pode ter mais de ${GameRules.MAX_FIELD_SIZE} Pokémon simultâneos.`);
           return;
         }
-        // Entrar em modo sacrifício mesmo que o campo esteja cheio — jogador selecionará as cartas a sacrificar
-        setPendingSummonCardId(card.uniqueId);
-        setTributeSelectionMode(true);
-        setCardsToSacrifice([]);
-        addLog(`MODO SACRIFÍCIO: Selecione ${card.sacrificeRequired} Pokémon no campo ou na mão para invocar ${card.name}.`);
+
+        if (card.sacrificeRequired === 0) {
+          // Select card, show summon button
+          if (selectedCardId === card.uniqueId) {
+            // Deselect
+            setSelectedCardId(null);
+          } else {
+            setSelectedCardId(card.uniqueId);
+          }
+        } else {
+          // Contar pokémons disponíveis para sacrificar (mão + campo), exceto a carta sendo invocada
+          const pokemonsInHand = player.hand.filter(c => c.cardType === 'POKEMON' && c.uniqueId !== card.uniqueId).length;
+          const availableTotal = pokemonsInHand + player.field.length;
+          if (availableTotal < card.sacrificeRequired) {
+            addLog(`Sacrifícios insuficientes! ${card.name} exige ${card.sacrificeRequired} Pokémon entre mão e campo.`);
+            return;
+          }
+          // Entrar em modo sacrifício mesmo que o campo esteja cheio — jogador selecionará as cartas a sacrificar
+          setPendingSummonCardId(card.uniqueId);
+          setTributeSelectionMode(true);
+          setCardsToSacrifice([]);
+        }
       }
     }
   };
@@ -707,6 +715,29 @@ export default function App() {
         </div>
 
         {/* Summon/Sacrifice Controls */}
+        {selectedCardId && !tributeSelectionMode && !attackMode && (() => {
+          const selectedCard = player.hand.find(c => c.uniqueId === selectedCardId);
+          return selectedCard?.cardType === 'POKEMON' && selectedCard.sacrificeRequired === 0 && (
+            <div className="flex justify-center gap-4 mt-3">
+              <button
+                onClick={() => {
+                  summonCard('player', selectedCardId, []);
+                  setSelectedCardId(null);
+                }}
+                className="px-6 py-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg font-bold hover:from-green-600 hover:to-emerald-600 transition-all"
+              >
+                Invocar {selectedCard.name}
+              </button>
+              <button
+                onClick={() => setSelectedCardId(null)}
+                className="px-4 py-2 bg-gray-600 rounded-lg hover:bg-gray-500 transition-all"
+              >
+                Cancelar
+              </button>
+            </div>
+          );
+        })()}
+
         {tributeSelectionMode && pendingSummonCardId && (
           <div className="flex justify-center gap-4 mt-3">
             <span className="text-gray-400 self-center">
@@ -743,7 +774,7 @@ export default function App() {
         )}
 
         {/* Phase Controls */}
-        {currentTurnPlayer === 'player' && !isBusy && !tributeSelectionMode && !attackMode && (
+        {currentTurnPlayer === 'player' && !isBusy && !tributeSelectionMode && !attackMode && !selectedCardId && (
           <div className="flex justify-center gap-4 mt-3">
             {phase === Phase.MAIN && (
               <button
