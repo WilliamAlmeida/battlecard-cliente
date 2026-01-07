@@ -458,10 +458,9 @@ export const PvPGameBoard: React.FC<PvPGameBoardProps> = ({ onGameEnd }) => {
           </div>
         )}
 
-        {/* Phase Controls */}
-        {isMyTurn() && !selectedCard && !targetingMode && (
-          <div className="flex justify-center gap-4 mt-3">
-            {gameState.phase === 'MAIN' && (
+        <div className="flex justify-center gap-4 mt-3">
+          {/* Phase Controls */}
+            {isMyTurn() && !selectedCard && !targetingMode && gameState.phase === 'MAIN' && (
               <button
                 onClick={endPhase}
                 className="px-6 py-2 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg font-bold hover:from-orange-600 hover:to-red-600 transition-all"
@@ -469,7 +468,7 @@ export const PvPGameBoard: React.FC<PvPGameBoardProps> = ({ onGameEnd }) => {
                 ⚔️ Ir para Batalha
               </button>
             )}
-            {gameState.phase === 'BATTLE' && (
+            {isMyTurn() && !selectedCard && !targetingMode && gameState.phase === 'BATTLE' && (
               <button
                 onClick={endPhase}
                 className="px-6 py-2 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-lg font-bold hover:from-blue-600 hover:to-indigo-600 transition-all"
@@ -477,20 +476,24 @@ export const PvPGameBoard: React.FC<PvPGameBoardProps> = ({ onGameEnd }) => {
                 ➡️ Encerrar Turno
               </button>
             )}
-            <button
-              onClick={surrender}
-              className="px-4 py-2 bg-gray-600 rounded-lg hover:bg-gray-500 transition-all"
-            >
-              🏳️ Desistir
-            </button>
-            <button
-              onClick={() => setShowBattleLog(!showBattleLog)}
-              className="px-4 py-2 bg-gray-600 rounded-lg hover:bg-gray-500 transition-all"
-            >
-              📜 Log
-            </button>
-          </div>
-        )}
+            {/* Surrender button available even when it's opponent's turn */}
+            {!targetingMode && !selectedCard && (
+              <button
+                onClick={surrender}
+                className="px-4 py-2 bg-gray-600 rounded-lg hover:bg-gray-500 transition-all"
+              >
+                🏳️ Desistir
+              </button>
+            )}
+            {!targetingMode && !selectedCard && (
+              <button
+                onClick={() => setShowBattleLog(!showBattleLog)}
+                className="px-4 py-2 bg-gray-600 rounded-lg hover:bg-gray-500 transition-all"
+              >
+                📜 Log
+              </button>
+            )}
+        </div>
       </div>
 
       {/* Battle Log Sidebar */}
