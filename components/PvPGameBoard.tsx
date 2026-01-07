@@ -496,32 +496,12 @@ export const PvPGameBoard: React.FC<PvPGameBoardProps> = ({ onGameEnd }) => {
         </div>
       </div>
 
-      {/* Battle Log Sidebar */}
-      {showBattleLog && (
-        <div className="absolute right-0 top-0 bottom-0 w-80 bg-gray-800 border-l border-gray-700 p-4 overflow-y-auto z-20">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-bold text-white">📜 Log de Batalha</h3>
-            <button onClick={() => setShowBattleLog(false)} className="text-gray-400 hover:text-white">
-              ✕
-            </button>
-          </div>
-          <div className="space-y-2">
-            {gameState.gameLog.slice().reverse().map(log => (
-              <div key={log.id} className="text-sm p-2 bg-gray-700/50 rounded">
-                <span className={`${
-                  log.type === 'combat' ? 'text-red-400' :
-                  log.type === 'ability' ? 'text-purple-400' :
-                  log.type === 'spell' ? 'text-blue-400' :
-                  log.type === 'trap' ? 'text-yellow-400' :
-                  'text-gray-300'
-                }`}>
-                  {log.message}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Battle Log (uses shared BattleLog component) */}
+      <BattleLog
+        logs={gameState.gameLog}
+        isOpen={showBattleLog}
+        onToggle={() => setShowBattleLog(v => !v)}
+      />
     </div>
   );
 };
