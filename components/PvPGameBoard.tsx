@@ -107,10 +107,19 @@ export const PvPGameBoard: React.FC<PvPGameBoardProps> = ({ onGameEnd }) => {
     summonCard(selectedCard.uniqueId, selectedSacrifices);
   };
 
-  // Handle field card click for attack
+  // Handle field card click for attack or spell targeting
   const handleMyFieldCardClick = (card: Card) => {
     if (!isMyTurn() || !gameState) return;
     
+    // If in spell targeting mode for SINGLE_ALLY spells
+    if (targetingMode === 'spell' && selectedCard) {
+      useSpell(selectedCard.uniqueId, card.uniqueId);
+      setSelectedCard(null);
+      setTargetingMode(null);
+      return;
+    }
+    
+    // If in battle phase, allow attack
     if (gameState.phase === 'BATTLE') {
       if (canAttack(card)) {
         setAttackingCard(card);
@@ -237,8 +246,29 @@ export const PvPGameBoard: React.FC<PvPGameBoardProps> = ({ onGameEnd }) => {
         </div>
       )}
 
-      {/* Top Bar - Opponent Info */}
-      <div className="bg-gray-800/80 border-b border-gray-700 p-3">
+      {/* Top Bar */}
+      <header className="flex flex-wrap justify-around items-center p-2 bg-slate-800/95 border-b-4 border-white/5 z-30 shadow-2xl gap-2 md:gap-6">
+
+        {/* My Info */}
+
+        <div className="flex items-center gap-2 md:gap-2 flex-1 md:flex-none">
+          <div className="w-12 md:w-20 h-12 md:h-20 bg-blue-600 rounded-3xl border-4 border-white flex items-center justify-center text-2xl md:text-5xl shadow-lg flex-shrink-0">{myPlayer?.avatar || '👤'}</div>
+          <div className="flex flex-col">
+            <div className="font-black text-xs sm:text-lg drop-shadow-md">{myPlayer.odhnima || 'Player'}</div>
+            <div className="relative">
+              <div className="w-32 md:w-80 h-5 md:h-7 bg-black rounded-full border-2 border-white/20 overflow-hidden shadow-inner">
+                  <div className="h-full bg-gradient-to-r from-blue-600 to-blue-400 transition-all duration-700" style={{width: `${(myPlayer.hp/8000)*100}%`}}></div>
+              </div>
+              <span className="absolute inset-0 flex items-center justify-center text-xs md:text-lg font-black drop-shadow-md">{myPlayer.hp} LP</span>
+              {/* {floatingDamage?.targetId === 'player-hp' && <div className="damage-popup left-0 top-0 text-3xl md:text-5xl">-{floatingDamage.value}</div>} */}
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="text-sm text-gray-400">📚 {myPlayer.deckCount}</div>
+            </div>
+          </div>
+        </div>
+      
+          {/* Opponent Info */}
         <div className="flex items-center justify-between max-w-6xl mx-auto">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-orange-500 rounded-full flex items-center justify-center text-xl">
@@ -264,13 +294,15 @@ export const PvPGameBoard: React.FC<PvPGameBoardProps> = ({ onGameEnd }) => {
             </div>
           </div>
         </div>
-      </div>
+
+      </header>
+
+      
 
       {/* Game Area */}
-      <div className="flex-1 p-4">
+      <div className="flex-1 flex flex-col justify-center gap-y-10 gap-x-20 relative px-4 sm:px-4 py-8 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-slate-800 to-slate-900">
         {/* Opponent Field */}
-        <div className="mb-8">
-          <div className="text-xs text-gray-500 mb-2 text-center">Campo do Oponente</div>
+        <div className="relative">
           <div className="flex justify-center gap-3 min-h-[140px]">
             {opponentPlayer.field.length === 0 ? (
               <div 
@@ -297,16 +329,18 @@ export const PvPGameBoard: React.FC<PvPGameBoardProps> = ({ onGameEnd }) => {
           </div>
           {/* Opponent Trap Zone */}
           {opponentPlayer.trapZone.length > 0 && (
-            <div className="text-center mt-2">
-              <span className="text-xs text-gray-500">
-                🎭 {opponentPlayer.trapZone.length} armadilha(s) preparada(s)
-              </span>
+            <div className={`absolute -bottom-8 sm:bottom-0 right-3 flex gap-3 z-10 scale-50 sm:scale-75`}>
+              {opponentPlayer.trapZone.map(trap => (
+                <div key={trap.uniqueId}>
+                  <CardComponent card={trap} compact faceDown />
+                </div>
+              ))}
             </div>
           )}
         </div>
 
         {/* Turn & Phase Indicator */}
-        <div className="flex items-center justify-center gap-6 mb-8">
+        <div className="flex items-center justify-center gap-6">
           <div className={`px-4 py-2 rounded-lg ${isMyTurn() ? 'bg-green-500' : 'bg-red-500'}`}>
             {isMyTurn() ? '🟢 Seu Turno' : '🔴 Turno do Oponente'}
           </div>
@@ -322,8 +356,7 @@ export const PvPGameBoard: React.FC<PvPGameBoardProps> = ({ onGameEnd }) => {
         </div>
 
         {/* My Field */}
-        <div className="mb-4">
-          <div className="text-xs text-gray-500 mb-2 text-center">Meu Campo</div>
+        <div className="relative">
           <div className="flex justify-center gap-3 min-h-[140px]">
             {myPlayer.field.length === 0 ? (
               <div className="w-24 h-32 border-2 border-dashed border-gray-600 rounded-lg flex items-center justify-center text-gray-600">
@@ -347,48 +380,24 @@ export const PvPGameBoard: React.FC<PvPGameBoardProps> = ({ onGameEnd }) => {
               ))
             )}
           </div>
-          {/* My Trap Zone placeholder (moved below to sit outside the field) */}
+          {/* My Trap Zone (compact corner, outside the field like PvE) */}
+          {myPlayer.trapZone.length > 0 && (
+            <div className={`absolute -bottom-8 sm:bottom-0 right-3 flex gap-3 z-10 scale-50 sm:scale-75`}>
+              {myPlayer.trapZone.map(trap => (
+                <div key={trap.uniqueId}>
+                  <CardComponent card={trap} compact />
+                </div>
+              ))}
+            </div>
+          )}
+
         </div>
       </div>
 
-      {/* My Trap Zone (compact corner, outside the field like PvE) */}
-      {myPlayer.trapZone.length > 0 && (
-        <div className={`absolute -bottom-8 sm:bottom-0 right-3 flex gap-3 z-10 scale-50 sm:scale-75`}>
-          {myPlayer.trapZone.map(trap => (
-            <div key={trap.uniqueId}>
-              <CardComponent card={trap} compact />
-            </div>
-          ))}
-        </div>
-      )}
 
       {/* Bottom Bar - My Info & Hand */}
       <div className="bg-gray-800/80 border-t border-gray-700 p-3">
-        {/* My Info */}
-        <div className="flex items-center justify-between max-w-6xl mx-auto mb-3">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-xl">
-              🎮
-            </div>
-            <div>
-              <div className="font-bold text-white">{myPlayer.odhnima}</div>
-              <div className="flex items-center gap-2">
-                <div className="text-sm text-gray-400">📚 {myPlayer.deckCount}</div>
-              </div>
-            </div>
-          </div>
-          
-          {/* My HP */}
-          <div className="text-right">
-            <div className="text-green-400 font-bold text-2xl">{myPlayer.hp}</div>
-            <div className="w-32 h-2 bg-gray-700 rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-green-500 transition-all"
-                style={{ width: `${(myPlayer.hp / 8000) * 100}%` }}
-              />
-            </div>
-          </div>
-        </div>
+        
 
         {/* My Hand */}
         <div className="flex justify-center gap-2 overflow-x-auto pb-2 min-h-[187px]">
