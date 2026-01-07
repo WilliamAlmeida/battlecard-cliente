@@ -303,7 +303,9 @@ export function usePvPGameLogic() {
     // Turn changed
     unsubscribers.push(
       gameSessionService.on(ServerEvent.TURN_CHANGED, () => {
-        setTurnTimeRemaining(90);
+        if (gameSessionService.currentGameState) {
+          setTurnTimeRemaining(gameSessionService.currentGameState.turnTimeoutSeconds);
+        }
         soundService.playClick();
       })
     );

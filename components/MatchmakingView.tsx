@@ -355,7 +355,7 @@ export const MatchmakingView: React.FC<MatchmakingViewProps> = ({ onBack, onGame
         {/* Info */}
         <div className="mt-8 text-center text-gray-500 text-sm">
           <p>💡 O primeiro jogador a zerar o HP do oponente vence!</p>
-          <p className="mt-1">⏱️ Limite de 90 segundos por turno</p>
+          <p className="mt-1">⏱️ Cada turno tem um limite de tempo</p>
         </div>
       </div>
     </div>
