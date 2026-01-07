@@ -347,18 +347,20 @@ export const PvPGameBoard: React.FC<PvPGameBoardProps> = ({ onGameEnd }) => {
               ))
             )}
           </div>
-          {/* My Trap Zone */}
-          {myPlayer.trapZone.length > 0 && (
-            <div className="flex justify-center gap-2 mt-2">
-              {myPlayer.trapZone.map(trap => (
-                <div key={trap.uniqueId} className="opacity-60">
-                  <CardComponent card={trap} size="tiny" />
-                </div>
-              ))}
-            </div>
-          )}
+          {/* My Trap Zone placeholder (moved below to sit outside the field) */}
         </div>
       </div>
+
+      {/* My Trap Zone (compact corner, outside the field like PvE) */}
+      {myPlayer.trapZone.length > 0 && (
+        <div className={`absolute -bottom-8 sm:bottom-0 right-3 flex gap-3 z-10 scale-50 sm:scale-75`}>
+          {myPlayer.trapZone.map(trap => (
+            <div key={trap.uniqueId}>
+              <CardComponent card={trap} compact />
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Bottom Bar - My Info & Hand */}
       <div className="bg-gray-800/80 border-t border-gray-700 p-3">
@@ -389,7 +391,7 @@ export const PvPGameBoard: React.FC<PvPGameBoardProps> = ({ onGameEnd }) => {
         </div>
 
         {/* My Hand */}
-        <div className="flex justify-center gap-2 overflow-x-auto pb-2">
+        <div className="flex justify-center gap-2 overflow-x-auto pb-2 min-h-[187px]">
           {myPlayer.hand.map(card => (
             <div 
               key={card.uniqueId}
