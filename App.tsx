@@ -14,6 +14,8 @@ import { StatsView } from './components/StatsView';
 import { AchievementNotification } from './components/AchievementNotification';
 import { DeckBuilderView } from './components/DeckBuilderView';
 import { ShopView } from './components/ShopView';
+import { MatchmakingView } from './components/MatchmakingView';
+import { PvPGameBoard } from './components/PvPGameBoard';
 import { achievementsService } from './services/achievementsService';
 import { campaignService } from './services/campaignService';
 import { soundService } from './services/soundService';
@@ -21,7 +23,7 @@ import { getCardsByIds } from './constants';
 import { collectionService } from './services/collectionService';
 import { statsService } from './services/statsService';
 
-type AppView = 'menu' | 'game' | 'collection' | 'achievements' | 'stats' | 'deckbuilder' | 'shop';
+type AppView = 'menu' | 'game' | 'collection' | 'achievements' | 'stats' | 'deckbuilder' | 'shop' | 'pvp-matchmaking' | 'pvp-game';
 
 export default function App() {
   const {
@@ -358,6 +360,7 @@ export default function App() {
           onOpenAchievements={() => setCurrentView('achievements')}
           onOpenStats={() => setCurrentView('stats')}
           onOpenShop={() => setCurrentView('shop')}
+          onOpenPvP={() => setCurrentView('pvp-matchmaking')}
           selectedDeckId={selectedDeckId}
           onSelectDeck={handleSelectDeck}
         />
@@ -447,6 +450,33 @@ export default function App() {
     return (
       <>
         <ShopView onClose={() => setCurrentView('menu')} />
+        <AchievementNotification
+          achievement={achievementNotification}
+          onClose={() => setAchievementNotification(null)}
+        />
+      </>
+    );
+  }
+
+  if (currentView === 'pvp-matchmaking') {
+    return (
+      <>
+        <MatchmakingView 
+          onBack={() => setCurrentView('menu')} 
+          onGameStart={() => setCurrentView('pvp-game')}
+        />
+        <AchievementNotification
+          achievement={achievementNotification}
+          onClose={() => setAchievementNotification(null)}
+        />
+      </>
+    );
+  }
+
+  if (currentView === 'pvp-game') {
+    return (
+      <>
+        <PvPGameBoard onGameEnd={() => setCurrentView('pvp-matchmaking')} />
         <AchievementNotification
           achievement={achievementNotification}
           onClose={() => setAchievementNotification(null)}

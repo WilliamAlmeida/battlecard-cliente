@@ -15,6 +15,7 @@ interface MainMenuProps {
   onOpenAchievements: () => void;
   onOpenStats: () => void;
   onOpenShop: () => void;
+  onOpenPvP: () => void;
   selectedDeckId: string | null;
   onSelectDeck: (deckId: string | null) => void;
 }
@@ -26,6 +27,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({
   onOpenAchievements,
   onOpenStats,
   onOpenShop,
+  onOpenPvP,
   selectedDeckId,
   onSelectDeck
 }) => {
@@ -607,6 +609,18 @@ export const MainMenu: React.FC<MainMenuProps> = ({
           <span className="text-5xl mb-4 block group-hover:animate-bounce">🎴</span>
           <h3 className="text-2xl font-black">Draft</h3>
           <p className="text-sm text-white/70">Monte um deck único antes de jogar</p>
+        </button>
+
+        <button
+          onClick={() => { soundService.playClick(); onOpenPvP(); }}
+          className="bg-gradient-to-br from-indigo-600 to-violet-600 p-8 rounded-3xl text-left hover:scale-105 transition-all shadow-2xl border-b-8 border-indigo-900 group relative overflow-hidden"
+        >
+          <div className="absolute top-2 right-2 bg-yellow-500 text-black text-xs font-bold px-2 py-1 rounded-full animate-pulse">
+            NOVO!
+          </div>
+          <span className="text-5xl mb-4 block group-hover:animate-bounce">🌐</span>
+          <h3 className="text-2xl font-black">PvP Online</h3>
+          <p className="text-sm text-white/70">Batalhe contra outros jogadores!</p>
         </button>
 
         <button
