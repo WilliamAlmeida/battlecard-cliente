@@ -792,6 +792,15 @@ export default function App() {
                 ➡️ Encerrar Turno
               </button>
             )}
+            <button
+              onClick={() => {
+                addLog('Você desistiu.','info');
+                handleBackToMenu();
+              }}
+              className="px-4 py-2 bg-gray-600 rounded-lg hover:bg-gray-500 transition-all"
+            >
+              🏳️ Desistir
+            </button>
           </div>
         )}
       </div>
