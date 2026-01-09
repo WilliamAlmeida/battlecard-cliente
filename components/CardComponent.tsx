@@ -185,7 +185,7 @@ export const CardComponent: React.FC<CardProps> = ({
           </Tooltip>
         </div>
         <div className="flex justify-between items-start mb-2 pointer-events-none">
-          <span className="font-semibold sm:font-bold md:text-base truncate leading-tight drop-shadow-lg">{card.name}</span>
+          <span className="font-semibold sm:font-bold md:text-sm lg:text-base truncate leading-tight drop-shadow-lg">{card.name}</span>
         </div>
         <div className="flex-1 flex items-center justify-center">
           <span className="text-6xl">✨</span>
@@ -212,7 +212,7 @@ export const CardComponent: React.FC<CardProps> = ({
           </Tooltip>
         </div>
         <div className="flex justify-between items-start mb-2 pointer-events-none">
-          <span className="font-semibold sm:font-bold md:text-base truncate leading-tight drop-shadow-lg">{card.name}</span>
+          <span className="font-semibold sm:font-bold md:text-sm lg:text-base truncate leading-tight drop-shadow-lg">{card.name}</span>
         </div>
         <div className="flex-1 flex items-center justify-center">
           <span className="text-6xl">{card.isSet ? '❓' : '⚠️'}</span>
@@ -263,7 +263,7 @@ export const CardComponent: React.FC<CardProps> = ({
       )}
 
       <div className="flex justify-between items-start pointer-events-none mt-1 mb-2 z-[2]">
-        <span className="font-semibold sm:font-bold md:text-base truncate leading-tight drop-shadow-lg tracking-tighter italic max-w-full overflow-hidden">{card.name}</span>
+        <span className="font-semibold sm:font-bold md:text-sm lg:text-base truncate leading-tight drop-shadow-lg tracking-tighter italic max-w-full overflow-hidden">{card.name}</span>
       </div>
 
       {/* Rarity indicator for legendaries */}
@@ -276,8 +276,8 @@ export const CardComponent: React.FC<CardProps> = ({
       <div className="absolute top-0 right-2 pointer-events-none">
         {!compact ? (
           <div className="flex items-center space-x-1">
-            <span className="text-yellow-300 text-lg drop-shadow-[0_0_5px_rgba(0,0,0,0.5)]">★</span>
-            <span className="text-yellow-100 text-lg font-bold">{card.level}</span>
+            <span className="text-yellow-300 text-sm lg:text-lg drop-shadow-[0_0_5px_rgba(0,0,0,0.5)]">★</span>
+            <span className="text-yellow-100 text-sm lg:text-lg font-bold">{card.level}</span>
           </div>
         ) : (
           <div className="flex space-x-1">
