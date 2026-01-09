@@ -268,15 +268,15 @@ export const PvPGameBoard: React.FC<PvPGameBoardProps> = ({ onGameEnd }) => {
               {/* {floatingDamage?.targetId === 'player-hp' && <div className="damage-popup left-0 top-0 text-3xl md:text-5xl">-{floatingDamage.value}</div>} */}
             </div>
             <div className="flex items-center gap-2">
-              <div className="text-sm text-gray-400">📚 {myPlayer.deckCount}</div>
+              <div className="text-sm text-gray-400">🎴 {myPlayer.deckCount}</div>
             </div>
           </div>
         </div>
         
         <div className="absolute -top-2 left-1/2 -translate-x-1/2 mt-2">
           <div className="text-center bg-black/30 px-2 md:px-5 py-[2px] sm:py-2 rounded-b-lg sm:rounded-b-3xl border-b-2 border-x-2 border-white/10 shadow-2xl flex gap-x-1">
-            <div className="text-[10px] sm:text-xl font-bold text-yellow-500 tracking-tighter">TURNO {gameState.turnNumber} -</div>
-            <div className={`text-[10px] sm:text-xl font-bold uppercase tracking-widest ${isMyTurn() ? 'text-blue-400 animate-pulse' : 'text-red-400'}`}>
+            <div className="text-[10px] sm:text-base lg:text-xl font-bold text-yellow-500 tracking-tighter">TURNO {gameState.turnNumber} -</div>
+            <div className={`text-[10px] sm:text-base lg:text-xl font-bold uppercase tracking-widest ${isMyTurn() ? 'text-blue-400 animate-pulse' : 'text-red-400'}`}>
               {isMyTurn() ? 'SEU TURNO' : 'OPONENTE'}
             </div>
           </div>
@@ -296,7 +296,7 @@ export const PvPGameBoard: React.FC<PvPGameBoardProps> = ({ onGameEnd }) => {
             </div>
             <div className="flex items-center gap-2">
               <div className="text-sm text-gray-400">🃏 {opponentPlayer.handCount}</div>
-              <div className="text-sm text-gray-400">📚 {opponentPlayer.deckCount}</div>
+              <div className="text-sm text-gray-400">🎴 {opponentPlayer.deckCount}</div>
             </div>
           </div>
         </div>
