@@ -3,7 +3,7 @@
  * Real-time multiplayer game board
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { usePvPGameLogic } from '../hooks/usePvPGameLogic';
 import { Card, Phase, CardType } from '../types';
 import { CardComponent } from './CardComponent';
@@ -44,10 +44,18 @@ export const PvPGameBoard: React.FC<PvPGameBoardProps> = ({ onGameEnd }) => {
 
   const [showBattleLog, setShowBattleLog] = useState(false);
   const [targetingMode, setTargetingMode] = useState<'attack' | 'spell' | null>(null);
+  // Attack animation state - set BEFORE sending attack to server
+  const [attackAnimation, setAttackAnimation] = useState<{ attackerId: string; targetId: string; position: { x: number; y: number } } | null>(null);
   
   const myPlayer = getMyPlayer();
   const opponentPlayer = getOpponentPlayer();
   const playerRole = getPlayerRole();
+  
+  // Refs to card DOM elements for computing target positions for animations
+  const cardRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+  
+  // Cache of last known card positions (updated on render)
+  const cardPositionsCache = useRef<Map<string, { x: number; y: number; width: number; height: number }>>(new Map());
 
   // Compute floating damage from lastAttack
   const floatingDamage = lastAttack ? (() => {
@@ -57,18 +65,79 @@ export const PvPGameBoard: React.FC<PvPGameBoardProps> = ({ onGameEnd }) => {
     if (opponentDamage > 0) return { value: opponentDamage, targetId: 'opponent-hp' };
     return null;
   })() : null;
-
-  // Refs to card DOM elements for computing target positions for animations
-  const cardRefs = useRef<Map<string, HTMLDivElement>>(new Map());
-
-  const getTargetPosition = (attackerId: string, targetId: string) => {
+  
+  // Helper function to compute position delta between two cards
+  const getTargetPosition = useCallback((attackerId: string, targetId: string): { x: number; y: number } | null => {
     const attackerEl = cardRefs.current.get(attackerId);
     const targetEl = cardRefs.current.get(targetId);
-    if (!attackerEl || !targetEl) return undefined;
-    const a = attackerEl.getBoundingClientRect();
-    const b = targetEl.getBoundingClientRect();
-    return { x: b.left - a.left, y: b.top - a.top };
-  };
+    
+    if (attackerEl && targetEl) {
+      const a = attackerEl.getBoundingClientRect();
+      const b = targetEl.getBoundingClientRect();
+      
+      if (a.width > 0 && a.height > 0 && b.width > 0 && b.height > 0) {
+        return { x: b.left - a.left, y: b.top - a.top };
+      }
+    }
+    
+    // Try from cached positions
+    const cachedAttacker = cardPositionsCache.current.get(attackerId);
+    const cachedTarget = cardPositionsCache.current.get(targetId);
+    
+    if (cachedAttacker && cachedTarget) {
+      return { x: cachedTarget.x - cachedAttacker.x, y: cachedTarget.y - cachedAttacker.y };
+    }
+    
+    return null;
+  }, []);
+  
+  // Update positions cache whenever cards change
+  useEffect(() => {
+    cardRefs.current.forEach((el, id) => {
+      const rect = el.getBoundingClientRect();
+      if (rect.width > 0 && rect.height > 0) {
+        cardPositionsCache.current.set(id, {
+          x: rect.left,
+          y: rect.top,
+          width: rect.width,
+          height: rect.height
+        });
+      }
+    });
+  }, [myPlayer?.field, opponentPlayer?.field]);
+
+  // When lastAttack arrives from server, trigger animation for OPPONENT attacks
+  // (our own attacks are animated immediately when we click)
+  useEffect(() => {
+    if (!lastAttack || !lastAttack.defenderUniqueId) {
+      return;
+    }
+    
+    // Check if this is my attack (already animated) or opponent's attack (needs animation)
+    const myFieldCards = myPlayer?.field.map(c => c.uniqueId) || [];
+    const isMyAttack = myFieldCards.includes(lastAttack.attackerUniqueId);
+    
+    // If it's opponent's attack, we need to animate it now
+    if (!isMyAttack) {
+      const position = getTargetPosition(lastAttack.attackerUniqueId, lastAttack.defenderUniqueId);
+      
+      // Fallback: opponent attacks down (from top of screen)
+      const fallbackPosition = { x: 0, y: 150 };
+      
+      setAttackAnimation({
+        attackerId: lastAttack.attackerUniqueId,
+        targetId: lastAttack.defenderUniqueId,
+        position: position || fallbackPosition
+      });
+    }
+    
+    // Clear animation after delay
+    const timer = setTimeout(() => {
+      setAttackAnimation(null);
+    }, 600);
+    
+    return () => clearTimeout(timer);
+  }, [lastAttack, myPlayer?.field, getTargetPosition]);
 
   // Format turn timer
   const formatTimer = (seconds: number) => {
@@ -163,6 +232,25 @@ export const PvPGameBoard: React.FC<PvPGameBoardProps> = ({ onGameEnd }) => {
     if (!targetingMode) return;
     
     if (targetingMode === 'attack' && attackingCard) {
+      // Calculate position BEFORE sending attack to server
+      const position = getTargetPosition(attackingCard.uniqueId, card.uniqueId);
+      
+      // Fallback: my cards attack upward (toward opponent)
+      const fallbackPosition = { x: 0, y: -150 };
+      
+      // Start animation immediately
+      setAttackAnimation({
+        attackerId: attackingCard.uniqueId,
+        targetId: card.uniqueId,
+        position: position || fallbackPosition
+      });
+      
+      // Clear animation after delay
+      setTimeout(() => {
+        setAttackAnimation(null);
+      }, 600);
+      
+      // Send attack to server
       attack(attackingCard.uniqueId, card.uniqueId);
       setAttackingCard(null);
       setTargetingMode(null);
@@ -176,6 +264,19 @@ export const PvPGameBoard: React.FC<PvPGameBoardProps> = ({ onGameEnd }) => {
   // Handle direct attack
   const handleDirectAttack = () => {
     if (!attackingCard) return;
+    
+    // Start animation for direct attack (upward movement)
+    setAttackAnimation({
+      attackerId: attackingCard.uniqueId,
+      targetId: 'direct',
+      position: { x: 0, y: -200 }
+    });
+    
+    // Clear animation after delay
+    setTimeout(() => {
+      setAttackAnimation(null);
+    }, 600);
+    
     directAttack(attackingCard.uniqueId);
     setAttackingCard(null);
     setTargetingMode(null);
@@ -357,10 +458,10 @@ export const PvPGameBoard: React.FC<PvPGameBoardProps> = ({ onGameEnd }) => {
                     card={card} 
                     size="small" 
                     isOpponent
-                    isAttacking={lastAttack?.attackerUniqueId === card.uniqueId}
+                    isAttacking={attackAnimation?.attackerId === card.uniqueId}
                     isDamaged={lastAttack?.defenderUniqueId === card.uniqueId}
-                    attackTargetActive={lastAttack?.attackerUniqueId === card.uniqueId && !!lastAttack?.defenderUniqueId}
-                    targetPosition={lastAttack?.attackerUniqueId === card.uniqueId && lastAttack?.defenderUniqueId ? getTargetPosition(lastAttack.attackerUniqueId, lastAttack.defenderUniqueId) : undefined}
+                    attackTargetActive={attackAnimation?.attackerId === card.uniqueId && !!attackAnimation?.targetId}
+                    targetPosition={attackAnimation?.attackerId === card.uniqueId ? attackAnimation.position : undefined}
                     hasStatusEffects={card.statusEffects?.some(s => s !== 'NONE')}
                   />
                 </div>
@@ -414,10 +515,10 @@ export const PvPGameBoard: React.FC<PvPGameBoardProps> = ({ onGameEnd }) => {
                     showAttacked={card.hasAttacked}
                     canAttack={canAttack(card) && !attackingCard}
                     isActive={attackingCard?.uniqueId === card.uniqueId}
-                    isAttacking={lastAttack?.attackerUniqueId === card.uniqueId}
+                    isAttacking={attackAnimation?.attackerId === card.uniqueId}
                     isDamaged={lastAttack?.defenderUniqueId === card.uniqueId}
-                    attackTargetActive={lastAttack?.attackerUniqueId === card.uniqueId && !!lastAttack?.defenderUniqueId}
-                    targetPosition={lastAttack?.attackerUniqueId === card.uniqueId && lastAttack?.defenderUniqueId ? getTargetPosition(lastAttack.attackerUniqueId, lastAttack.defenderUniqueId) : undefined}
+                    attackTargetActive={attackAnimation?.attackerId === card.uniqueId && !!attackAnimation?.targetId}
+                    targetPosition={attackAnimation?.attackerId === card.uniqueId ? attackAnimation.position : undefined}
                     hasStatusEffects={card.statusEffects?.some(s => s !== 'NONE')}
                   />
                 </div>
