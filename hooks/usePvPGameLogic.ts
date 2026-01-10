@@ -413,6 +413,33 @@ export function usePvPGameLogic() {
         } else {
           soundService.playDefeat();
         }
+        // Update local PvP stats so UI reflects changes immediately
+        try {
+          if (stats) {
+            const updated: PvPStats = { ...stats };
+
+            // Apply win/loss and streak changes unless server skipped (surrender)
+            if (result.reason !== 'surrender') {
+              if (won) {
+                updated.wins = (updated.wins || 0) + 1;
+                updated.currentStreak = (updated.currentStreak || 0) + 1;
+                updated.bestStreak = Math.max(updated.bestStreak || 0, updated.currentStreak);
+              } else {
+                updated.losses = (updated.losses || 0) + 1;
+                updated.currentStreak = 0;
+              }
+            }
+
+            // Apply ELO delta sent by server (server sends per-player delta)
+            updated.elo = (updated.elo || 0) + (result.eloChange || 0);
+
+            setStats(updated);
+            // Keep singleton in sync so other mounts read new stats
+            (gameSessionService as any).stats = updated;
+          }
+        } catch (e) {
+          console.warn('[usePvPGameLogic] Failed to update local stats on GAME_OVER', e);
+        }
       })
     );
 
