@@ -74,14 +74,14 @@ export const Graveyard: React.FC<GraveyardProps> = ({ playerGrave, npcGrave, isO
               <div className="h-full flex items-center justify-center text-slate-600 font-black italic text-center p-8">Nenhuma carta no cemitério ainda.</div>
             )}
 
-            {entriesToShow.map((entry, idx) => (
+              {entriesToShow.slice().reverse().map((entry, idx) => (
                 <div key={`${entry.card.uniqueId}-${idx}`} className={`p-2 rounded-xl bg-slate-800/40 border-l-4 scale-95 h-30 ${entry.owner !== 'Oponente' ? 'border-blue-500' : 'border-red-500'}`}>
-                    <CardComponent
-                    // render a shallow clone without statusEffects and force inactive flags
-                    card={{ ...entry.card, statusEffects: [] }} compact isActive={false} canAttack={false} isAttacking={false} isDamaged={false}
-                    />
+                  <CardComponent
+                  // render a shallow clone without statusEffects and force inactive flags
+                  card={{ ...entry.card, statusEffects: [] }} compact isActive={false} canAttack={false} isAttacking={false} isDamaged={false}
+                  />
                 </div>
-            ))}
+              ))}
           </div>
         </div>
       </div>
