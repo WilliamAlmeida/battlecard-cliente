@@ -46,6 +46,9 @@ export default function App() {
   
   // Refs para calcular posições das cartas
   const cardRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+
+  // Currently selected card from hand (may be a spell) — used to determine targeting highlights
+  const selectedSpell = selectedCardId ? player.hand.find(c => c.uniqueId === selectedCardId) : null;
   
   // Função para calcular posição relativa entre atacante e alvo
   const getTargetPosition = (attackerId: string, targetId: string) => {
@@ -615,7 +618,8 @@ export default function App() {
                   ref={(el) => el && cardRefs.current.set(card.uniqueId, el)}
                   onClick={() => handleEnemyClick(card)} 
                   className={`cursor-pointer transition-transform ${
-                    attackMode ? 'hover:scale-110 ring-2 ring-red-500' : ''
+                    // Highlight opponent cards only when in attackMode AND not targeting an ally-only spell
+                    attackMode && !(selectedSpell?.cardType === 'SPELL' && selectedSpell.spellEffect?.target === 'SINGLE_ALLY') ? 'hover:scale-110 ring-2 ring-red-500' : ''
                   }`}
                 >
                   <CardComponent 
@@ -671,7 +675,8 @@ export default function App() {
                     className={`cursor-pointer transition-all
                       ${selectedCardId === card.uniqueId ? 'scale-105 ring-0 ring-yellow-500' : ''}
                       ${cardsToSacrifice.includes(card.uniqueId) ? 'ring-2 ring-red-500 opacity-70' : ''}
-                      ${canAttackCard ? 'hover:ring-2 hover:ring-green-500' : ''}`}
+                      ${canAttackCard ? 'hover:ring-2 hover:ring-green-500' : ''}
+                      ${attackMode && selectedSpell?.cardType === 'SPELL' && selectedSpell.spellEffect?.target === 'SINGLE_ALLY' ? 'hover:scale-110 ring-2 ring-yellow-500' : ''}`}
                   >
                     <CardComponent 
                       card={card}
