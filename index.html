@@ -39,6 +39,24 @@
         80% { opacity: 1; transform: translateY(-40px); }
         100% { opacity: 0; transform: translateY(-60px); }
       }
+      @keyframes float-effect-up {
+        0% { opacity: 0; transform: translateY(0) scale(0.8); }
+        20% { opacity: 1; transform: translateY(-15px) scale(1.1); }
+        80% { opacity: 1; transform: translateY(-35px) scale(1); }
+        100% { opacity: 0; transform: translateY(-50px) scale(0.9); }
+      }
+      @keyframes float-effect-down {
+        0% { opacity: 0; transform: translateY(0) scale(0.8); }
+        20% { opacity: 1; transform: translateY(15px) scale(1.1); }
+        80% { opacity: 1; transform: translateY(35px) scale(1); }
+        100% { opacity: 0; transform: translateY(50px) scale(0.9); }
+      }
+      @keyframes float-effect-none {
+        0% { opacity: 0; transform: scale(0.5); }
+        20% { opacity: 1; transform: scale(1.2); }
+        80% { opacity: 1; transform: scale(1); }
+        100% { opacity: 0; transform: scale(0.8); }
+      }
 
       .animate-attack-up { animation: attack-up 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
       .animate-attack-down { animation: attack-down 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
@@ -54,6 +72,18 @@
         z-index: 200;
         animation: float-damage 1s forwards;
       }
+      .effect-popup {
+        position: absolute;
+        font-weight: 900;
+        font-size: 1.2rem;
+        text-shadow: 2px 2px 0 #000;
+        pointer-events: none;
+        z-index: 200;
+        white-space: nowrap;
+      }
+      .effect-popup.anim-up { animation: float-effect-up 1s forwards; }
+      .effect-popup.anim-down { animation: float-effect-down 1s forwards; }
+      .effect-popup.anim-none { animation: float-effect-none 1s forwards; }
     </style>
   </head>
   <body class="bg-slate-900 text-slate-100 overflow-hidden selection:bg-red-500 selection:text-white">

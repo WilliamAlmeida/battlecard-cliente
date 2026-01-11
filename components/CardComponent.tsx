@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, ElementType, StatusEffect, CardType, Rarity } from '../types';
+import { Card, ElementType, StatusEffect, CardType, Rarity, FloatingEffect } from '../types';
 import Tooltip from './Tooltip';
 
 interface CardProps {
@@ -17,6 +17,7 @@ interface CardProps {
   showAttacked?: boolean;
   targetPosition?: { x: number; y: number };
   attackTargetActive?: boolean;
+  floatingEffects?: FloatingEffect[];
 }
 
 const getTypeColor = (type: ElementType) => {
@@ -92,7 +93,8 @@ export const CardComponent: React.FC<CardProps> = ({
   showDetails, 
   showAttacked,
   targetPosition, 
-  attackTargetActive 
+  attackTargetActive,
+  floatingEffects = []
 }) => {
   let animationClass = '';
   let customAnimation = '';
@@ -330,6 +332,22 @@ export const CardComponent: React.FC<CardProps> = ({
             <span className={`${compact ? 'text-sm px-2 py-1 border-4' : 'text-sm px-2 py-1 border-4'} font-black text-white/80 uppercase -rotate-12 border-white/30 rounded-2xl scale-125 tracking-tighter italic shadow-2xl`}>EXAUSTO</span>
         </div>
       )}
+      
+      {/* Floating Effects */}
+      {floatingEffects.filter(e => e.targetId === card.uniqueId).map(effect => (
+        <div 
+          key={effect.id} 
+          className={`effect-popup anim-${effect.animation}`}
+          style={{ 
+            color: effect.color,
+            left: '50%',
+            top: '50%',
+            transform: 'translate(-50%, -50%)'
+          }}
+        >
+          {effect.text}
+        </div>
+      ))}
     </div>
     </>
   );

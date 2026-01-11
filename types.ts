@@ -162,6 +162,14 @@ export interface GameLogEntry {
   timestamp: number;
 }
 
+export interface FloatingEffect {
+  id: string;
+  text: string;
+  color: string;
+  animation: 'up' | 'down' | 'none';
+  targetId: string;
+}
+
 export type AIActionType = 'SUMMON' | 'ATTACK' | 'END_TURN' | 'GO_TO_BATTLE' | 'WAIT' | 'USE_SPELL' | 'SET_TRAP';
 
 export interface AIAction {

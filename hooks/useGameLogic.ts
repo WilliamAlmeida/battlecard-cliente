@@ -40,6 +40,7 @@ export const useGameLogic = () => {
   const [damagedCardId, setDamagedCardId] = useState<string | null>(null);
   const [attackTargetId, setAttackTargetId] = useState<string | null>(null);
   const [floatingDamage, setFloatingDamage] = useState<{id: string, value: number, targetId: string} | null>(null);
+  const [floatingEffects, setFloatingEffects] = useState<Array<{id: string, text: string, color: string, animation: 'up' | 'down' | 'none', targetId: string}>>([]);
   const [isAnimating, setIsAnimating] = useState(false);
   
   // Game settings
@@ -72,6 +73,16 @@ export const useGameLogic = () => {
     } else if (type === 'effect') {
       soundService.playBuff();
     }
+  }, []);
+
+  const showFloatingEffect = useCallback((text: string, color: string, animation: 'up' | 'down' | 'none', targetId: string) => {
+    const id = generateUniqueId();
+    setFloatingEffects(prev => [...prev, { id, text, color, animation, targetId }]);
+    
+    // Auto-remove after animation completes
+    setTimeout(() => {
+      setFloatingEffects(prev => prev.filter(e => e.id !== id));
+    }, 1000);
   }, []);
 
   // Ensure game end is applied exactly once to avoid race conditions
@@ -378,6 +389,12 @@ export const useGameLogic = () => {
           return c;
         })
       }));
+      
+      // Show floating effect for each debuffed card
+      trapResult.debuffTargets.forEach(debuff => {
+        const statName = debuff.stat ? (debuff.stat === 'DEFENSE' ? 'DEF' : 'ATK') : 'ATK/DEF';
+        showFloatingEffect(`${debuff.value} ${statName}`, '#ef4444', 'down', debuff.targetId);
+      });
     }
 
     // Apply status effects from traps
@@ -390,6 +407,20 @@ export const useGameLogic = () => {
           return statusTarget ? applyStatusEffect(c, statusTarget.status, 3) : c;
         })
       }));
+      
+      // Show floating effect for each status applied
+      trapResult.statusEffects.forEach(se => {
+        const statusIcons: Record<string, string> = {
+          'BURN': '🔥',
+          'FREEZE': '🧊',
+          'PARALYZE': '⚡',
+          'POISON': '☠️',
+          'SLEEP': '😴',
+          'CONFUSE': '😵'
+        };
+        const icon = statusIcons[se.status] || '✨';
+        showFloatingEffect(icon, '#9333ea', 'none', se.target.uniqueId);
+      });
     }
 
     // Destroy attacker if trap caused destruction
@@ -902,6 +933,20 @@ export const useGameLogic = () => {
             return c;
           })
         }));
+        
+        // Show floating effect for status
+        trapResult.statusEffects.forEach(se => {
+          const statusIcons: Record<string, string> = {
+            'BURN': '🔥',
+            'FREEZE': '🧊',
+            'PARALYZE': '⚡',
+            'POISON': '☠️',
+            'SLEEP': '😴',
+            'CONFUSE': '😵'
+          };
+          const icon = statusIcons[se.status] || '✨';
+          showFloatingEffect(icon, '#9333ea', 'none', se.target.uniqueId);
+        });
       }
 
       // Apply debuffs
@@ -921,6 +966,12 @@ export const useGameLogic = () => {
             return c;
           })
         }));
+        
+        // Show floating effect for each debuffed card
+        trapResult.debuffTargets.forEach(debuff => {
+          const statName = debuff.stat ? (debuff.stat === 'DEFENSE' ? 'DEF' : 'ATK') : 'ATK/DEF';
+          showFloatingEffect(`${debuff.value} ${statName}`, '#ef4444', 'down', debuff.targetId);
+        });
       }
     }
   }, [addLog]);
@@ -978,12 +1029,14 @@ export const useGameLogic = () => {
       if (effect.target === 'OWNER' || effect.target === 'SELF' || !effect.target) {
         setFn(p => ({ ...p, hp: Math.min(8000, p.hp + healAmount) }));
         addLog(`${ownerName} recuperou ${healAmount} HP!`, 'effect');
+        showFloatingEffect(`+${healAmount} HP`, '#10b981', 'up', owner === 'player' ? 'player-hp' : 'npc-hp');
       } else if (effect.target === 'SINGLE_ALLY' && targetId) {
         // Monsters don't have HP — heal the owner instead, but mention the targeted ally in the log
         const target = state.field.find(c => c.uniqueId === targetId);
         if (target) {
           setFn(p => ({ ...p, hp: Math.min(8000, p.hp + healAmount) }));
           addLog(`${ownerName} recuperou ${healAmount} HP (alvo: ${target.name})!`, 'effect');
+          showFloatingEffect(`+${healAmount} HP`, '#10b981', 'up', owner === 'player' ? 'player-hp' : 'npc-hp');
         }
       }
     }
@@ -999,6 +1052,8 @@ export const useGameLogic = () => {
               graveyard: [...p.graveyard, { ...target, destroyedAt: Date.now() }]
             }));
             addLog(`${card.name} destruiu ${target.name}!`, 'combat');
+            // show floating damage / destroy feedback on the card
+            showFloatingEffect(`-${damage}`, '#dc2626', 'down', targetId);
           } else {
             // Subtract defense from the single target (do not remove other cards)
             opponentSetFn(p => ({
@@ -1006,6 +1061,7 @@ export const useGameLogic = () => {
               field: p.field.map(c => c.uniqueId === targetId ? { ...c, defense: Math.max(0, c.defense - damage) } : c)
             }));
             addLog(`${card.name} causou ${damage} de dano em ${target.name}!`, 'combat');
+            showFloatingEffect(`-${damage}`, '#dc2626', 'down', targetId);
           }
         }
       }
@@ -1033,11 +1089,17 @@ export const useGameLogic = () => {
         destroyed.forEach(d => addLog(`${card.name} destruiu ${d.name}!`, 'combat'));
         damaged.forEach(d => addLog(`${card.name} causou ${damage} de dano em ${d.name}!`, 'combat'));
         addLog(`${card.name} causou ${damage} de dano em todos os inimigos!`, 'combat');
+        // Show floating effects per target
+        destroyed.forEach(d => showFloatingEffect(`-${damage}`, '#dc2626', 'down', d.uniqueId));
+        damaged.forEach(d => showFloatingEffect(`-${damage}`, '#dc2626', 'down', d.uniqueId));
       }
       else if (effect.target === 'OWNER') {
         // OWNER = dano direto ao oponente (HP do oponente)
         opponentSetFn(p => ({ ...p, hp: Math.max(0, p.hp - damage) }));
         addLog(`${card.name} causou ${damage} de dano direto ao oponente!`, 'combat');
+        // Show floating damage on HP bar
+        const hpTarget = owner === 'player' ? 'npc-hp' : 'player-hp';
+        showFloatingEffect(`-${damage} HP`, '#dc2626', 'down', hpTarget);
       }
     }
     else if (effect.type === 'BUFF') {
@@ -1057,11 +1119,13 @@ export const useGameLogic = () => {
             ) : c)
           }));
           addLog(`${target.name} ganhou +${buffAmount} ${statName}!`, 'effect');
+          showFloatingEffect(`+${buffAmount} ${statName}`, '#22c55e', 'up', targetId);
         } else {
           addLog(`Alvo inválido para ${card.name}!`, 'effect');
         }
       } else if (effect.target === 'ALL_ALLIES') {
         // Apply buff to all allied cards on field
+        const allies = state.field;
         setFn(p => ({
           ...p,
           field: p.field.map(c => (
@@ -1070,6 +1134,10 @@ export const useGameLogic = () => {
           ))
         }));
         addLog(`${ownerName} aplicou +${buffAmount} ${statName} a todos os aliados!`, 'effect');
+        // Show floating effect on each ally
+        allies.forEach(ally => {
+          showFloatingEffect(`+${buffAmount} ${statName}`, '#22c55e', 'up', ally.uniqueId);
+        });
       } else {
         addLog(`Alvo inválido para ${card.name}!`, 'effect');
       }
@@ -1105,6 +1173,18 @@ export const useGameLogic = () => {
           field: p.field.map(c => c.uniqueId === targetId ? applyStatusEffect(c, effect.statusEffect!, effect.duration || 3) : c)
         }));
         addLog(`${card.name} aplicou ${effect.statusEffect} em ${target.name}!`, 'status');
+        
+        // Show floating effect for status
+        const statusIcons: Record<string, string> = {
+          'BURN': '🔥',
+          'FREEZE': '🧊',
+          'PARALYZE': '⚡',
+          'POISON': '☠️',
+          'SLEEP': '😴',
+          'CONFUSE': '😵'
+        };
+        const icon = statusIcons[effect.statusEffect] || '✨';
+        showFloatingEffect(icon, '#9333ea', 'none', targetId);
       }
     }
     else if (effect.type === 'REVIVE' && effect.target === 'GRAVEYARD') {
@@ -1137,7 +1217,7 @@ export const useGameLogic = () => {
   return {
     gameStarted, gameOver, winner, player, npc, turnCount, currentTurnPlayer, phase, logs,
     isAIProcessing: isAnimating,
-    attackingCardId, damagedCardId, floatingDamage,
+    attackingCardId, damagedCardId, floatingDamage, floatingEffects,
     attackTargetId,
     difficulty, gameMode,
     startGame, 
@@ -1164,6 +1244,7 @@ export const useGameLogic = () => {
       setWinner(null);
       setTotalDamageDealt(0);
       setCardsDestroyed(0);
-    }
+    },
+    showFloatingEffect
   };
 };

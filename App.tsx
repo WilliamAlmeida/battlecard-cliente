@@ -28,9 +28,9 @@ type AppView = 'menu' | 'game' | 'collection' | 'achievements' | 'stats' | 'deck
 export default function App() {
   const {
     gameStarted, gameOver, winner, player, npc, turnCount, currentTurnPlayer, phase, logs,
-    isAIProcessing, attackingCardId, damagedCardId, floatingDamage, attackTargetId, difficulty, gameMode,
+    isAIProcessing, attackingCardId, damagedCardId, floatingDamage, floatingEffects, attackTargetId, difficulty, gameMode,
     startGame, setPhase, summonCard, setTrap, useSpell, executeAttack, endTurn, addLog, resetGame,
-    startNextSurvivalWave
+    startNextSurvivalWave, showFloatingEffect
   } = useGameLogic();
 
   const [currentView, setCurrentView] = useState<AppView>('menu');
@@ -556,6 +556,9 @@ export default function App() {
               </div>
               <span className="absolute inset-0 flex items-center justify-center text-xs md:text-lg font-black drop-shadow-md">{player.hp} LP</span>
               {floatingDamage?.targetId === 'player-hp' && <div className="damage-popup left-0 top-0 text-3xl md:text-5xl">-{floatingDamage.value}</div>}
+              {floatingEffects.filter(e => e.targetId === 'player-hp').map(e => (
+                <div key={e.id} className={`effect-popup anim-${e.animation} left-0 top-0 text-3xl md:text-5xl`} style={{ color: e.color }}>{e.text}</div>
+              ))}
             </div>
           </div>
         </div>
@@ -580,6 +583,9 @@ export default function App() {
               </div>
               <span className="absolute inset-0 flex items-center justify-center text-xs md:text-lg font-black drop-shadow-md">{npc.hp} LP</span>
               {floatingDamage?.targetId === 'npc-hp' && <div className="damage-popup right-0 top-0 text-3xl md:text-5xl">-{floatingDamage.value}</div>}
+              {floatingEffects.filter(e => e.targetId === 'npc-hp').map(e => (
+                <div key={e.id} className={`effect-popup anim-${e.animation} right-0 top-0 text-3xl md:text-5xl`} style={{ color: e.color }}>{e.text}</div>
+              ))}
             </div>
           </div>
           <div className="w-12 md:w-20 h-12 md:h-20 bg-red-600 rounded-3xl border-4 border-white flex items-center justify-center text-2xl md:text-5xl shadow-lg flex-shrink-0">{npc.avatar || '🤖'}</div>
@@ -621,6 +627,7 @@ export default function App() {
                     attackTargetActive={attackingCardId !== null && attackTargetId !== null && attackingCardId === card.uniqueId}
                     targetPosition={attackingCardId === card.uniqueId && attackTargetId ? getTargetPosition(card.uniqueId, attackTargetId) : undefined}
                     hasStatusEffects={card.statusEffects?.some(s => s !== 'NONE')}
+                    floatingEffects={floatingEffects}
                   />
                 </div>
               ))
@@ -676,6 +683,7 @@ export default function App() {
                       canAttack={canAttackCard}
                       isActive={selectedCardId === card.uniqueId}
                       hasStatusEffects={card.statusEffects?.some(s => s !== 'NONE')}
+                      floatingEffects={floatingEffects}
                     />
                   </div>
                 );
@@ -719,6 +727,7 @@ export default function App() {
                 size="small" 
                 isActive={selectedCardId === card.uniqueId || pendingSummonCardId === card.uniqueId}
                 hasStatusEffects={card.statusEffects?.some(s => s !== 'NONE')}
+                floatingEffects={floatingEffects}
               />
             </div>
           ))}
