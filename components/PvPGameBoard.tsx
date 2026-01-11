@@ -9,6 +9,7 @@ import { Card, Phase, CardType } from '../types';
 import { CardComponent } from './CardComponent';
 import { BattleLog } from './BattleLog';
 import { Graveyard } from './Graveyard';
+import { TypeTable } from './TypeTable';
 
 interface PvPGameBoardProps {
   onGameEnd: () => void;
@@ -45,6 +46,7 @@ export const PvPGameBoard: React.FC<PvPGameBoardProps> = ({ onGameEnd }) => {
 
   const [showBattleLog, setShowBattleLog] = useState(false);
   const [showGraveyard, setShowGraveyard] = useState(false);
+  const [showTypeTable, setShowTypeTable] = useState(false);
   const [targetingMode, setTargetingMode] = useState<'attack' | 'spell' | null>(null);
   const [spellTargetSide, setSpellTargetSide] = useState<'ally' | 'enemy' | 'both' | null>(null);
   // Attack animation state - set BEFORE sending attack to server
@@ -646,14 +648,14 @@ export const PvPGameBoard: React.FC<PvPGameBoardProps> = ({ onGameEnd }) => {
                 🏳️ Desistir
               </button>
             )}
-            {!targetingMode && !selectedCard && (
+            {/* {!targetingMode && !selectedCard && (
               <button
                 onClick={() => setShowBattleLog(!showBattleLog)}
                 className="px-4 py-2 bg-gray-600 rounded-lg hover:bg-gray-500 transition-all"
               >
                 📜 Log
               </button>
-            )}
+            )} */}
         </div>
       </div>
 
@@ -662,6 +664,11 @@ export const PvPGameBoard: React.FC<PvPGameBoardProps> = ({ onGameEnd }) => {
         logs={[...gameState.gameLog].reverse()}
         isOpen={showBattleLog}
         onToggle={() => setShowBattleLog(v => !v)}
+      />
+
+      <TypeTable
+        isOpen={showTypeTable}
+        onToggle={() => setShowTypeTable(v => !v)}
       />
 
       {/* Graveyard */}

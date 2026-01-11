@@ -44,7 +44,7 @@ export const Graveyard: React.FC<GraveyardProps> = ({ playerGrave, npcGrave, isO
   })();
 
   return (
-    <div className={`fixed right-0 top-[305px] sm:top-[365px] z-[32] transition-transform duration-300 ${isOpen ? 'translate-x-0' : 'translate-x-[calc(100%-56px)]'} ${isOpen ? '' : 'pointer-events-none'}`}>
+    <div className={`fixed right-0 top-[240px] sm:top-[290px] z-[33] transition-transform duration-300 ${isOpen ? 'translate-x-0' : 'translate-x-[calc(100%-56px)]'} ${isOpen ? '' : 'pointer-events-none'}`}>
       <div className="flex items-start">
         <button onClick={toggle} className="bg-slate-800 border-2 border-r-0 border-white/20 p-4 rounded-l-2xl shadow-2xl hover:bg-slate-700 transition-colors pointer-events-auto" aria-label="Abrir cemitério">
           <span className="sm:text-2xl">{isOpen ? '👉' : '⚰️'}</span>
